@@ -1,5 +1,8 @@
 #include "CustomMapLoaderPlugin.h"
 
+#include "CustomMapLoader.h"
+#include "CustomMapSelectionUI.h"
+
 #define STRINGIZE(s)		STRINGIZE2(s)
 #define STRINGIZE2(s)		#s
 
@@ -17,12 +20,13 @@ BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, PL
 
 void CustomMapLoaderPlugin::onLoad()
 {
-	myMapLoader.OnLoad();
+	//TODO:: find game dir and backup dir. also update backup dir if settings change
+	myMapLoader.reset(new CustomMapLoader());
+	myMapSelectionUI.reset(new CustomMapSelectionUI(*myMapLoader));
 }
 
 void CustomMapLoaderPlugin::onUnload()
 {
-	myMapLoader.OnUnload();
 }
 
 void CustomMapLoaderPlugin::OnOpen()

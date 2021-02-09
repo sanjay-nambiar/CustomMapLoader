@@ -2,8 +2,14 @@
 
 #include "imgui.h"
 
-CustomMapSelectionUI::CustomMapSelectionUI()
+#include <filesystem>
+#include <map>
+#include <string>
+#include <vector>
+
+CustomMapSelectionUI::CustomMapSelectionUI(CustomMapLoader& aMapLoader)
 	: myIsWindowOpen(false)
+	, myMapLoader(aMapLoader)
 {
 }
 
@@ -25,6 +31,7 @@ void CustomMapSelectionUI::OnClose()
 
 void CustomMapSelectionUI::Render()
 {
+	RenderCustomMapSelectionWidget();
 }
 
 bool CustomMapSelectionUI::ShouldBlockInput()
@@ -33,6 +40,11 @@ bool CustomMapSelectionUI::ShouldBlockInput()
 }
 
 bool CustomMapSelectionUI::IsActiveOverlay()
+{
+	return true;
+}
+
+void CustomMapSelectionUI::RenderCustomMapSelectionWidget()
 {
 	return true;
 }

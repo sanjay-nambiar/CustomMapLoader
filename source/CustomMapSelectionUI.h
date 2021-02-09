@@ -1,11 +1,13 @@
 #pragma once
 
+#include "CustomMapLoader.h"
+
 #include <cstdint>
 
 class CustomMapSelectionUI
 {
 public:
-	CustomMapSelectionUI();
+	CustomMapSelectionUI(CustomMapLoader& aMapLoader);
 	~CustomMapSelectionUI() = default;
 
 	void SetImGuiContext(std::uintptr_t aContext);
@@ -19,5 +21,8 @@ public:
 	bool IsActiveOverlay();
 
 private:
+	void RenderCustomMapSelectionWidget();
+
 	bool myIsWindowOpen;
+	CustomMapLoader& myMapLoader;
 };

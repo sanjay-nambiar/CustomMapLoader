@@ -5,10 +5,10 @@
 #include "bakkesmod\plugin\bakkesmodplugin.h"
 #include "bakkesmod\plugin\pluginwindow.h"
 
-#include "CustomMapLoader.h"
-#include "CustomMapSelectionUI.h"
-
 #include <string>
+
+class CustomMapLoader;
+class CustomMapSelectionUI;
 
 class CustomMapLoaderPlugin : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginWindow
 {
@@ -30,6 +30,6 @@ public:
 	bool IsActiveOverlay() override;
 
 private:
-	CustomMapLoader myMapLoader;
-	CustomMapSelectionUI myMapSelectionUI;
+	std::unique_ptr<CustomMapLoader> myMapLoader;
+	std::unique_ptr<CustomMapSelectionUI> myMapSelectionUI;
 };
