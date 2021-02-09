@@ -17,8 +17,6 @@ BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, PL
 
 void CustomMapLoaderPlugin::onLoad()
 {
-
-	myMenuTitle = FULL_PLUGIN_NAME;
 	myMapLoader.OnLoad();
 }
 
@@ -44,12 +42,12 @@ void CustomMapLoaderPlugin::Render()
 
 std::string CustomMapLoaderPlugin::GetMenuName()
 {
-	return "Custom Map Loader";
+	return "custommaploader";
 }
 
 std::string CustomMapLoaderPlugin::GetMenuTitle()
 {
-	return "Select Custom Map";
+	return FULL_PLUGIN_NAME;
 }
 
 void CustomMapLoaderPlugin::SetImGuiContext(uintptr_t aContext)
@@ -59,10 +57,10 @@ void CustomMapLoaderPlugin::SetImGuiContext(uintptr_t aContext)
 
 bool CustomMapLoaderPlugin::ShouldBlockInput()
 {
-	return true;
+	return myMapSelectionUI.ShouldBlockInput();
 }
 
 bool CustomMapLoaderPlugin::IsActiveOverlay()
 {
-	return true;
+	return myMapSelectionUI.IsActiveOverlay();
 }

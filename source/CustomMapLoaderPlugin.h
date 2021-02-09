@@ -32,6 +32,4 @@ public:
 private:
 	CustomMapLoader myMapLoader;
 	CustomMapSelectionUI myMapSelectionUI;
-
-	std::string myMenuTitle;
 };
