@@ -3,18 +3,7 @@
 #include "CustomMapLoader.h"
 #include "CustomMapSelectionUI.h"
 
-#define STRINGIZE(s)		STRINGIZE2(s)
-#define STRINGIZE2(s)		#s
-
-#define PLUGIN_NAME			Custom Map Loader
-#define PLUGIN_NAME_STR		STRINGIZE(PLUGIN_NAME)
-
-#define MAJOR_VERSION		0
-#define MINOR_VERSION		1
-#define HOTFIX_VERSION		1
-
-#define FULL_VERSION_STRING	"v" STRINGIZE(MAJOR_VERSION) "." STRINGIZE(MINOR_VERSION) "." STRINGIZE(HOTFIX_VERSION)
-#define FULL_PLUGIN_NAME	STRINGIZE(PLUGIN_NAME) " v" STRINGIZE(MAJOR_VERSION) "." STRINGIZE(MINOR_VERSION) "." STRINGIZE(HOTFIX_VERSION)
+#include "Version.h"
 
 BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, PLUGINTYPE_FREEPLAY)
 
@@ -31,17 +20,17 @@ void CustomMapLoaderPlugin::onUnload()
 
 void CustomMapLoaderPlugin::OnOpen()
 {
-	myMapSelectionUI.OnOpen();
+	myMapSelectionUI->OnOpen();
 }
 
 void CustomMapLoaderPlugin::OnClose()
 {
-	myMapSelectionUI.OnClose();
+	myMapSelectionUI->OnClose();
 }
 
 void CustomMapLoaderPlugin::Render()
 {
-	myMapSelectionUI.Render();
+	myMapSelectionUI->Render();
 }
 
 std::string CustomMapLoaderPlugin::GetMenuName()
@@ -56,15 +45,15 @@ std::string CustomMapLoaderPlugin::GetMenuTitle()
 
 void CustomMapLoaderPlugin::SetImGuiContext(uintptr_t aContext)
 {
-	myMapSelectionUI.SetImGuiContext(aContext);
+	myMapSelectionUI->SetImGuiContext(aContext);
 }
 
 bool CustomMapLoaderPlugin::ShouldBlockInput()
 {
-	return myMapSelectionUI.ShouldBlockInput();
+	return myMapSelectionUI->ShouldBlockInput();
 }
 
 bool CustomMapLoaderPlugin::IsActiveOverlay()
 {
-	return myMapSelectionUI.IsActiveOverlay();
+	return myMapSelectionUI->IsActiveOverlay();
 }

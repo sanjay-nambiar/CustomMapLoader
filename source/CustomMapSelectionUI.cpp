@@ -46,5 +46,4 @@ bool CustomMapSelectionUI::IsActiveOverlay()
 
 void CustomMapSelectionUI::RenderCustomMapSelectionWidget()
 {
-	return true;
 }

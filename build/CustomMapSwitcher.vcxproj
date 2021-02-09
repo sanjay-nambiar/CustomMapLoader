@@ -32,6 +32,7 @@
     <ClInclude Include="..\source\CustomMapLoader.h" />
     <ClInclude Include="..\source\CustomMapLoaderPlugin.h" />
     <ClInclude Include="..\source\CustomMapSelectionUI.h" />
+    <ClInclude Include="..\source\Version.h" />
     <ClInclude Include="..\thirdparty\imgui\imconfig.h" />
     <ClInclude Include="..\thirdparty\imgui\imgui.h" />
     <ClInclude Include="..\thirdparty\imgui\imgui_internal.h" />
