@@ -2,6 +2,7 @@
 
 #include "imgui.h"
 
+#include <cstdint>
 #include <filesystem>
 #include <map>
 #include <string>
@@ -11,6 +12,8 @@
 namespace CustomMapSelectionUI_private
 {
 	static std::string locMenuName = "custom_map_loader";
+	static std::uint32_t locWindowWidth = 800;
+	static std::uint32_t locWindowHeight = 600;
 }
 
 CustomMapSelectionUI::CustomMapSelectionUI(CustomMapLoader& aMapLoader)
@@ -21,8 +24,7 @@ CustomMapSelectionUI::CustomMapSelectionUI(CustomMapLoader& aMapLoader)
 
 void CustomMapSelectionUI::SetImGuiContext(std::uintptr_t aContext)
 {
-	ImGuiContext* context = reinterpret_cast<ImGuiContext*>(aContext);
-	ImGui::SetCurrentContext(context);
+	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(aContext));
 }
 
 void CustomMapSelectionUI::SetTitle(const std::string& aTitle)

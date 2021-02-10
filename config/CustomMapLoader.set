@@ -2,10 +2,6 @@ Custom Map Loader
 8|
 9|(c) Space Anomalies Clan
 8|
-12|The map file to replace with workshop map|map_to_replace
-12|Epic Games Rocket League path|rocket_league_path
-12|Custom maps directory|custom_map_path
-8|
 9|Active custom map: $active_custom_map$
 8|
 0|Open Custom Map Selector GUI|togglemenu custom_map_loader
