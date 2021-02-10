@@ -40,6 +40,9 @@
     <ClInclude Include="..\thirdparty\imgui\imstb_textedit.h" />
     <ClInclude Include="..\thirdparty\imgui\imstb_truetype.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\config\CustomMapLoader.set" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -127,6 +130,9 @@
       <AdditionalLibraryDirectories>..\thirdparty\BakkesModSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>bakkesmod.lib;pluginsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>echo f|xcopy /Y "$(SolutionDir)..\config\$(ProjectName).set" "$(OutDir)$(ProjectName).set"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -147,6 +153,9 @@
       <AdditionalLibraryDirectories>..\thirdparty\BakkesModSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>bakkesmod.lib;pluginsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>echo f|xcopy /Y "$(SolutionDir)..\config\$(ProjectName).set" "$(OutDir)$(ProjectName).set"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -163,6 +172,9 @@
       <AdditionalLibraryDirectories>..\thirdparty\BakkesModSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>bakkesmod.lib;pluginsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>echo f|xcopy /Y "$(SolutionDir)..\config\$(ProjectName).set" "$(OutDir)$(ProjectName).set"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -183,6 +195,9 @@
       <AdditionalLibraryDirectories>..\thirdparty\BakkesModSDK\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>bakkesmod.lib;pluginsdk.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <PostBuildEvent>
+      <Command>echo f|xcopy /Y "$(SolutionDir)..\config\$(ProjectName).set" "$(OutDir)$(ProjectName).set"</Command>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

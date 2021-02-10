@@ -10,6 +10,9 @@
     <Filter Include="thirdparty\imgui">
       <UniqueIdentifier>{6c19bc81-8984-4b5e-86be-619f2425faef}</UniqueIdentifier>
     </Filter>
+    <Filter Include="config">
+      <UniqueIdentifier>{7d7212cc-8793-499c-aef5-953914cb1f11}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\CustomMapLoader.cpp">
@@ -68,5 +71,10 @@
     <ClInclude Include="..\source\Version.h">
       <Filter>source</Filter>
     </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\config\CustomMapLoader.set">
+      <Filter>config</Filter>
+    </None>
   </ItemGroup>
 </Project>

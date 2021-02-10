@@ -5,8 +5,7 @@
 
 namespace CustomMapLoader_private
 {
-	static std::filesystem::path locMapsDirectory = std::filesystem::path("TAGame/CookedPCConsole", std::filesystem::path::native_format);
-	static std::string locPristineMapToReplace = "Labs_Underpass_P.upk";
+	static const char* locMapsDirectory = "TAGame/CookedPCConsole";
 
 	CustomMapLoader::MapInfo locGetMapDetails(const std::filesystem::directory_entry& aMapDirectory)
 	{
@@ -54,6 +53,54 @@ CustomMapLoader::CustomMapLoader()
 	, myIsMapsRefreshed(false)
 	, myActiveCustomMap(-1)
 {
+	myGameDirectory = std::make_shared<std::string>();
+	myCustomMapDirectory = std::make_shared<std::string>();
+	myMapToReplace = std::make_shared<std::string>();
+}
+
+bool CustomMapLoader::ValdiateDirectories(std::vector<std::string>& errorMessages)
+{
+	bool isValid = true;
+
+	if (!std::filesystem::exists(GetGameDirectory()))
+	{
+		isValid = false;
+		errorMessages.push_back("Game directory does not exist!");
+	}
+	else
+	{
+		std::filesystem::path mapToReplacePath = *myGameDirectory;
+		mapToReplacePath.append(CustomMapLoader_private::locMapsDirectory).append(*myMapToReplace).make_preferred();
+
+		if (!std::filesystem::exists(mapToReplacePath))
+		{
+			errorMessages.push_back("Original game map to replace not found!");
+			isValid = false;
+		}
+	}
+
+	if (!std::filesystem::exists(GetCustomMapDirectory()))
+	{
+		isValid = false;
+		errorMessages.push_back("Backup directory does not exist!");
+	}
+
+	return isValid;
+}
+
+std::filesystem::path CustomMapLoader::GetGameDirectory() const
+{
+	return std::filesystem::path(*myGameDirectory).make_preferred();
+}
+
+std::filesystem::path CustomMapLoader::GetCustomMapDirectory() const
+{
+	return std::filesystem::path(*myCustomMapDirectory).make_preferred();
+}
+
+std::string CustomMapLoader::GetMapToReplace() const
+{
+	return *myMapToReplace;
 }
 
 bool CustomMapLoader::BackupPristineState()
@@ -61,11 +108,11 @@ bool CustomMapLoader::BackupPristineState()
 	if (myIsBackupAlive)
 		return true;
 
-	std::filesystem::path gameFile = myGameDirectory;
-	gameFile.append(CustomMapLoader_private::locPristineMapToReplace);
+	std::filesystem::path gameFile = *myGameDirectory;
+	gameFile.append(*myMapToReplace).make_preferred();
 
-	std::filesystem::path backupFile = myBackupDirectory;
-	backupFile.append(CustomMapLoader_private::locPristineMapToReplace);
+	std::filesystem::path backupFile = *myGameDirectory;
+	backupFile.append(*myMapToReplace).append(".bak").make_preferred();
 
 	myIsBackupAlive = CustomMapLoader_private::locCopyFile(gameFile, backupFile);
 	return myIsBackupAlive;
@@ -76,24 +123,24 @@ bool CustomMapLoader::RestorePristineState()
 	if (!myIsBackupAlive)
 		return false;
 
-	std::filesystem::path gameFile = myGameDirectory;
-	gameFile.append(CustomMapLoader_private::locPristineMapToReplace);
+	std::filesystem::path gameFile = *myGameDirectory;
+	gameFile.append(*myMapToReplace).make_preferred();
 
-	std::filesystem::path backupFile = myBackupDirectory;
-	backupFile.append(CustomMapLoader_private::locPristineMapToReplace);
+	std::filesystem::path backupFile = *myGameDirectory;
+	backupFile.append(*myMapToReplace).append(".bak").make_preferred();
 
 	myIsBackupAlive = !CustomMapLoader_private::locCopyFile(backupFile, gameFile);
 	return myIsBackupAlive;
 }
 
-bool CustomMapLoader::RefreshMaps(const std::string& aMapsDirectory)
+bool CustomMapLoader::RefreshMaps()
 {
-	if (!std::filesystem::exists(aMapsDirectory))
+	if (!std::filesystem::exists(GetCustomMapDirectory()))
 		return false;
 
 	myMaps.erase(myMaps.begin(), myMaps.end());
 
-	for (const auto& entry : std::filesystem::directory_iterator(aMapsDirectory))
+	for (const auto& entry : std::filesystem::directory_iterator(GetCustomMapDirectory()))
 	{
 		if (!entry.is_directory())
 			continue;
@@ -104,13 +151,13 @@ bool CustomMapLoader::RefreshMaps(const std::string& aMapsDirectory)
 	return true;
 }
 
-bool CustomMapLoader::SetCurrentMap(std::int32_t anIndex)
+bool CustomMapLoader::LoadMap(std::int32_t anIndex)
 {
 	if (!myIsBackupAlive || (anIndex > 0 && anIndex >= myMaps.size()))
 		return false;
 
-	std::filesystem::path gameFile = myGameDirectory;
-	gameFile.append(CustomMapLoader_private::locPristineMapToReplace);
+	std::filesystem::path gameFile = *myGameDirectory;
+	gameFile.append(CustomMapLoader_private::locMapsDirectory).append(*myMapToReplace).make_preferred();
 
 	return CustomMapLoader_private::locCopyFile(myMaps[anIndex].myMapFile, gameFile);
 }

@@ -5,9 +5,13 @@
 #include <string>
 #include <vector>
 
+#include "CustomMapLoaderPlugin.h"
+
 class CustomMapLoader
 {
 public:
+	friend class CustomMapLoaderPlugin;
+
 	struct MapInfo
 	{
 		std::string myTitle;
@@ -19,23 +23,25 @@ public:
 	CustomMapLoader();
 	~CustomMapLoader() = default;
 
-	const std::filesystem::path& GetGameDirectory() const { return myGameDirectory; }
-	const std::filesystem::path& GetBackupDirectory() const { return myBackupDirectory; }
-	void SetGameDirectory(const std::filesystem::path& aDirectory) { myGameDirectory = aDirectory; }
-	void SetBackupDirectory(const std::filesystem::path& aDirectory) { myBackupDirectory = aDirectory; }
+	std::filesystem::path GetGameDirectory() const;
+	std::filesystem::path GetCustomMapDirectory() const;
+	std::string GetMapToReplace() const;
+
+	bool ValdiateDirectories(std::vector<std::string>& errorMessages);
 
 	bool BackupPristineState();
 	bool RestorePristineState();
 
-	bool RefreshMaps(const std::string& aMapDirectory);
+	bool RefreshMaps();
 
 	const std::vector<MapInfo>& GetMaps() { return myMaps; }
 
-	bool SetCurrentMap(std::int32_t anIndex);
+	bool LoadMap(std::int32_t anIndex);
 	std::int32_t GetCurrentMap() const { return myActiveCustomMap; }
 private:
-	std::filesystem::path myGameDirectory;
-	std::filesystem::path myBackupDirectory;
+	std::shared_ptr<std::string> myGameDirectory;
+	std::shared_ptr<std::string> myCustomMapDirectory;
+	std::shared_ptr<std::string> myMapToReplace;
 
 	bool myIsBackupAlive;
 

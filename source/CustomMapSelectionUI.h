@@ -3,6 +3,7 @@
 #include "CustomMapLoader.h"
 
 #include <cstdint>
+#include <string>
 
 class CustomMapSelectionUI
 {
@@ -11,11 +12,15 @@ public:
 	~CustomMapSelectionUI() = default;
 
 	void SetImGuiContext(std::uintptr_t aContext);
+	void SetTitle(const std::string& aTitle);
 
 	void OnOpen();
 	void OnClose();
 
 	void Render();
+
+	std::string GetMenuName();
+	std::string GetMenuTitle();
 
 	bool ShouldBlockInput();
 	bool IsActiveOverlay();
@@ -25,4 +30,6 @@ private:
 
 	bool myIsWindowOpen;
 	CustomMapLoader& myMapLoader;
+
+	std::string myTitle;
 };

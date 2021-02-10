@@ -6,6 +6,12 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <windows.h>
+
+namespace CustomMapSelectionUI_private
+{
+	static std::string locMenuName = "custom_map_loader";
+}
 
 CustomMapSelectionUI::CustomMapSelectionUI(CustomMapLoader& aMapLoader)
 	: myIsWindowOpen(false)
@@ -17,6 +23,11 @@ void CustomMapSelectionUI::SetImGuiContext(std::uintptr_t aContext)
 {
 	ImGuiContext* context = reinterpret_cast<ImGuiContext*>(aContext);
 	ImGui::SetCurrentContext(context);
+}
+
+void CustomMapSelectionUI::SetTitle(const std::string& aTitle)
+{
+	myTitle = aTitle;
 }
 
 void CustomMapSelectionUI::OnOpen()
@@ -31,7 +42,16 @@ void CustomMapSelectionUI::OnClose()
 
 void CustomMapSelectionUI::Render()
 {
-	RenderCustomMapSelectionWidget();
+}
+
+std::string CustomMapSelectionUI::GetMenuName()
+{
+	return CustomMapSelectionUI_private::locMenuName;
+}
+
+std::string CustomMapSelectionUI::GetMenuTitle()
+{
+	return myTitle;
 }
 
 bool CustomMapSelectionUI::ShouldBlockInput()

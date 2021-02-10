@@ -10,19 +10,17 @@
 class CustomMapLoader;
 class CustomMapSelectionUI;
 
-class CustomMapLoaderPlugin : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginWindow
+class CustomMapLoaderPlugin final : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginWindow
 {
 public:
 	// BakkesModPlugin API
 	void onLoad() override;
 	void onUnload() override;
 
-
 	// PluginWindow API
 	void OnOpen() override;
 	void OnClose() override;
 	void Render() override;
-
 	std::string GetMenuName() override;
 	std::string GetMenuTitle() override;
 	void SetImGuiContext(uintptr_t aContext) override;
@@ -32,4 +30,7 @@ public:
 private:
 	std::unique_ptr<CustomMapLoader> myMapLoader;
 	std::unique_ptr<CustomMapSelectionUI> myMapSelectionUI;
+
+	std::filesystem::path myBakkesModConfigFolder;
+	std::filesystem::path myRocketPluginDataFolder;
 };
