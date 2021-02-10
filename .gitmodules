@@ -1,3 +1,6 @@
 [submodule "thirdparty/BakkesModSDK"]
 	path = thirdparty/BakkesModSDK
 	url = https://github.com/bakkesmodorg/BakkesModSDK
+[submodule "thirdparty/imgui"]
+	path = thirdparty/imgui
+	url = https://github.com/Stanbroek/imgui/
