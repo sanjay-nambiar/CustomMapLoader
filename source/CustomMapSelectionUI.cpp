@@ -12,8 +12,8 @@
 namespace CustomMapSelectionUI_private
 {
 	static std::string locMenuName = "custom_map_loader";
-	static std::uint32_t locWindowWidth = 800;
-	static std::uint32_t locWindowHeight = 600;
+	static float locWindowWidth = 800.f;
+	static float locWindowHeight = 600.f;
 }
 
 CustomMapSelectionUI::CustomMapSelectionUI(CustomMapLoader& aMapLoader)
@@ -42,18 +42,29 @@ void CustomMapSelectionUI::OnClose()
 	myIsWindowOpen = false;
 }
 
-void CustomMapSelectionUI::Render()
+bool CustomMapSelectionUI::Render()
 {
+	if (!IMGUI_CHECKVERSION())
+		return false;
+
+	ImGui::SetNextWindowSizeConstraints(ImVec2(CustomMapSelectionUI_private::locWindowWidth, CustomMapSelectionUI_private::locWindowHeight), ImVec2(FLT_MAX, FLT_MAX));
+
+	return true;
 }
 
-std::string CustomMapSelectionUI::GetMenuName()
+std::string CustomMapSelectionUI::GetMenuName() const
 {
 	return CustomMapSelectionUI_private::locMenuName;
 }
 
-std::string CustomMapSelectionUI::GetMenuTitle()
+std::string CustomMapSelectionUI::GetMenuTitle() const
 {
 	return myTitle;
+}
+
+bool CustomMapSelectionUI::IsWindowOpen() const
+{
+	return myIsWindowOpen;
 }
 
 bool CustomMapSelectionUI::ShouldBlockInput()

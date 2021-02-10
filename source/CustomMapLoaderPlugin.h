@@ -13,6 +13,8 @@ class CustomMapSelectionUI;
 class CustomMapLoaderPlugin final : public BakkesMod::Plugin::BakkesModPlugin, public BakkesMod::Plugin::PluginWindow
 {
 public:
+	CustomMapLoaderPlugin();
+
 	// BakkesModPlugin API
 	void onLoad() override;
 	void onUnload() override;
@@ -33,4 +35,6 @@ private:
 
 	std::filesystem::path myBakkesModConfigFolder;
 	std::filesystem::path myRocketPluginDataFolder;
+
+	bool myIsRendererInitialized;
 };

@@ -15,6 +15,11 @@ namespace CustomMapLoaderPlugin_private
 	}
 }
 
+CustomMapLoaderPlugin::CustomMapLoaderPlugin()
+	: myIsRendererInitialized(false)
+{
+}
+
 void CustomMapLoaderPlugin::onLoad()
 {
 	myMapLoader.reset(new CustomMapLoader());
@@ -25,21 +30,17 @@ void CustomMapLoaderPlugin::onLoad()
 	myBakkesModConfigFolder = gameWrapper->GetBakkesModPath() / L"cfg";
 	myRocketPluginDataFolder = gameWrapper->GetDataFolder() / L"RocketPlugin";
 
-	cvarManager->registerCvar("map_to_replace", "Labs_Underpass_P", "The map file to replace with workshop map", true, false, 0.0f, false, 0.0f, true)
+	cvarManager->registerCvar("cml_map_to_replace", "Labs_Underpass_P", "The map file to replace with workshop map", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myMapToReplace);
 
-	cvarManager->registerCvar("rocket_league_path", "C:/Program Files/Epic Games/rocketleague/", "Epic Games Rocket League path", true, false, 0.0f, false, 0.0f, true)
+	cvarManager->registerCvar("cml_rocket_league_path", "C:/Program Files/Epic Games/rocketleague/", "Epic Games Rocket League path", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myGameDirectory);
 
-	cvarManager->registerCvar("custom_map_path", "C:/Program Files/Epic Games/rocketleague/CustomMaps", "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
+	cvarManager->registerCvar("cml_custom_map_path", "C:/Program Files/Epic Games/rocketleague/CustomMaps", "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myCustomMapDirectory);
 
-	cvarManager->registerCvar("active_custom_map", "None", "error message", false);
-
-	cvarManager->registerNotifier("cml_openMenu", [this](std::vector<std::string>)
-		{
-			cvarManager->executeCommand("togglemenu " + myMapSelectionUI->GetMenuName());
-		}, "Opens Custom Map Loader menu", 0);
+	cvarManager->registerCvar("cml_active_custom_map", "None", "Currently Active Custom Map", false);
+	cvarManager->registerCvar("cml_error_message", "", "Error messages", false);
 
 	std::string configFile = CustomMapLoaderPlugin_private::locGetConfigFileName(myBakkesModConfigFolder);
 	if (std::filesystem::exists(configFile))
@@ -63,7 +64,23 @@ void CustomMapLoaderPlugin::OnClose()
 
 void CustomMapLoaderPlugin::Render()
 {
-	myMapSelectionUI->Render();
+	if (myMapSelectionUI->Render())
+	{
+		if (!myIsRendererInitialized)
+			cvarManager->getCvar("cml_error_message").setValue("");
+
+		myIsRendererInitialized = true;
+	}
+	else
+	{
+		if (myIsRendererInitialized)
+			cvarManager->getCvar("cml_error_message").setValue("ERROR: ImGui isn't initialized properly!");
+
+		myIsRendererInitialized = false;
+	}
+
+	if (!myMapSelectionUI->IsWindowOpen())
+		cvarManager->executeCommand("togglemenu " + myMapSelectionUI->GetMenuName());
 }
 
 std::string CustomMapLoaderPlugin::GetMenuName()

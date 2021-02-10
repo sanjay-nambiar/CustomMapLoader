@@ -33,9 +33,6 @@
     <ClCompile Include="..\thirdparty\imgui\imgui_draw.cpp">
       <Filter>thirdparty\imgui</Filter>
     </ClCompile>
-    <ClCompile Include="..\thirdparty\imgui\imgui_tables.cpp">
-      <Filter>thirdparty\imgui</Filter>
-    </ClCompile>
     <ClCompile Include="..\thirdparty\imgui\imgui_widgets.cpp">
       <Filter>thirdparty\imgui</Filter>
     </ClCompile>

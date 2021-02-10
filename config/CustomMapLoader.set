@@ -2,6 +2,8 @@ Custom Map Loader
 8|
 9|(c) Space Anomalies Clan
 8|
-9|Active custom map: $active_custom_map$
+9|Active custom map: $cml_active_custom_map$
+8|
+9|$cml_error_message$
 8|
 0|Open Custom Map Selector GUI|togglemenu custom_map_loader

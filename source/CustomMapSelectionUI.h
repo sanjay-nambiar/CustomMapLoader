@@ -17,10 +17,11 @@ public:
 	void OnOpen();
 	void OnClose();
 
-	void Render();
+	bool Render();
 
-	std::string GetMenuName();
-	std::string GetMenuTitle();
+	std::string GetMenuName() const;
+	std::string GetMenuTitle() const;
+	bool IsWindowOpen() const;
 
 	bool ShouldBlockInput();
 	bool IsActiveOverlay();
