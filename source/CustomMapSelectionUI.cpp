@@ -49,6 +49,12 @@ bool CustomMapSelectionUI::Render()
 
 	ImGui::SetNextWindowSizeConstraints(ImVec2(CustomMapSelectionUI_private::locWindowWidth, CustomMapSelectionUI_private::locWindowHeight), ImVec2(FLT_MAX, FLT_MAX));
 
+	if (ImGui::Begin(myTitle.c_str(), &myIsWindowOpen))
+	{
+		RenderCustomMapSelectionWidget();
+	}
+	ImGui::End();
+
 	return true;
 }
 
@@ -79,4 +85,5 @@ bool CustomMapSelectionUI::IsActiveOverlay()
 
 void CustomMapSelectionUI::RenderCustomMapSelectionWidget()
 {
+	ImGui::Text("Hello this is a text! - Space Anomalies");
 }
