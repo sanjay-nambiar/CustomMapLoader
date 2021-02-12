@@ -34,7 +34,7 @@ private:
 	std::unique_ptr<CustomMapSelectionUI> myMapSelectionUI;
 
 	std::filesystem::path myBakkesModConfigFolder;
-	std::filesystem::path myRocketPluginDataFolder;
+	std::filesystem::path myPluginDataDirectory;
 
 	bool myIsRendererInitialized;
 };

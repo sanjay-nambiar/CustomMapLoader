@@ -2,7 +2,6 @@
 
 #include "CustomMapLoader.h"
 #include "CustomMapSelectionUI.h"
-
 #include "Version.h"
 
 BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, PERMISSION_ALL)
@@ -13,6 +12,11 @@ namespace CustomMapLoaderPlugin_private
 	{
 		return std::filesystem::path(aConfigFolder).append("/custom_map_loader.cfg").string();
 	}
+
+	static const char* locCmlMapToReplace = "Labs_Underpass_P.upk";
+	static const char* locCmlRocketLeaguePath = "D:/Games/Epic Games/Games/rocketleague";
+	static const char* locCmlCustomMapPath = "D:/Games/Personal Game Content/Rocket Leauge/Custom Maps/Custom/Maps";
+	static const char* locCmlActiveCustomMap = "None";
 }
 
 CustomMapLoaderPlugin::CustomMapLoaderPlugin()
@@ -28,28 +32,27 @@ void CustomMapLoaderPlugin::onLoad()
 	myMapSelectionUI->SetTitle(FULL_PLUGIN_NAME);
 
 	myBakkesModConfigFolder = gameWrapper->GetBakkesModPath() / L"cfg";
-	myRocketPluginDataFolder = gameWrapper->GetDataFolder() / L"RocketPlugin";
+	myPluginDataDirectory = gameWrapper->GetDataFolder() / L"CustomMapLoader";
 
-	cvarManager->registerCvar("cml_map_to_replace", "Labs_Underpass_P", "The map file to replace with workshop map", true, false, 0.0f, false, 0.0f, true)
+	myMapSelectionUI->LoadPlaceholderImage(myPluginDataDirectory.string());
+
+	cvarManager->registerCvar("cml_map_to_replace", CustomMapLoaderPlugin_private::locCmlMapToReplace, "The map file to replace with workshop map", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myMapToReplace);
 
-	cvarManager->registerCvar("cml_rocket_league_path", "C:/Program Files/Epic Games/rocketleague/", "Epic Games Rocket League path", true, false, 0.0f, false, 0.0f, true)
+	cvarManager->registerCvar("cml_rocket_league_path", CustomMapLoaderPlugin_private::locCmlRocketLeaguePath, "Epic Games Rocket League path", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myGameDirectory);
 
-	cvarManager->registerCvar("cml_custom_map_path", "C:/Program Files/Epic Games/rocketleague/CustomMaps", "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
+	cvarManager->registerCvar("cml_custom_map_path", CustomMapLoaderPlugin_private::locCmlCustomMapPath, "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myCustomMapDirectory);
 
-	cvarManager->registerCvar("cml_active_custom_map", "None", "Currently Active Custom Map", false);
-	cvarManager->registerCvar("cml_error_message", "", "Error messages", false);
+	cvarManager->registerCvar("cml_active_custom_map", "", "Currently Active Custom Map", true, false, 0.0f, false, 0.0f, true)
+		.bindTo(myMapLoader->myActiveCustomMap);
 
-	std::string configFile = CustomMapLoaderPlugin_private::locGetConfigFileName(myBakkesModConfigFolder);
-	if (std::filesystem::exists(configFile))
-		cvarManager->loadCfg(CustomMapLoaderPlugin_private::locGetConfigFileName(myBakkesModConfigFolder));
+	cvarManager->registerCvar("cml_error_message", "", "Error messages", false);
 }
 
 void CustomMapLoaderPlugin::onUnload()
 {
-	cvarManager->backupCfg(CustomMapLoaderPlugin_private::locGetConfigFileName(myBakkesModConfigFolder));
 }
 
 void CustomMapLoaderPlugin::OnOpen()

@@ -26,9 +26,9 @@ public:
 	bool ShouldBlockInput();
 	bool IsActiveOverlay();
 
-private:
-	void RenderCustomMapSelectionWidget();
+	void LoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory);
 
+private:
 	bool myIsWindowOpen;
 	CustomMapLoader& myMapLoader;
 
