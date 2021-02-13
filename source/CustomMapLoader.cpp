@@ -57,16 +57,23 @@ namespace CustomMapLoader_private
 		return info;
 	}
 
+	std::filesystem::path locGetMapToReplacePath(const CustomMapLoader& aMapLoader)
+	{
+		std::filesystem::path gameFile = aMapLoader.GetGameDirectory();
+		gameFile.append(locMapsDirectory).append(aMapLoader.GetMapToReplace()).make_preferred();
+		return gameFile;
+	}
+
 	std::filesystem::path locGetBackupFilePath(const CustomMapLoader& aMapLoader)
 	{
 		std::filesystem::path backupFile = aMapLoader.GetGameDirectory();
-		backupFile.append(aMapLoader.GetMapToReplace()).append(".bak").make_preferred();
+		backupFile.append(locMapsDirectory).append(aMapLoader.GetMapToReplace() + ".bak").make_preferred();
 		return backupFile;
 	}
 
 	bool locIsBackupAvailable(const CustomMapLoader& aMapLoader)
 	{
-		return  std::filesystem::exists(locGetBackupFilePath(aMapLoader));
+		return std::filesystem::exists(locGetBackupFilePath(aMapLoader));
 	}
 }
 
@@ -144,10 +151,7 @@ bool CustomMapLoader::BackupPristineState()
 	if (CustomMapLoader_private::locIsBackupAvailable(*this))
 		return false;
 
-	std::filesystem::path gameFile = *myGameDirectory;
-	gameFile.append(*myMapToReplace).make_preferred();
-
-	return  CustomMapLoader_private::locCopyFile(gameFile, CustomMapLoader_private::locGetBackupFilePath(*this));
+	return CustomMapLoader_private::locCopyFile(CustomMapLoader_private::locGetMapToReplacePath(*this), CustomMapLoader_private::locGetBackupFilePath(*this));
 }
 
 bool CustomMapLoader::RestorePristineState()
@@ -155,10 +159,14 @@ bool CustomMapLoader::RestorePristineState()
 	if (!CustomMapLoader_private::locIsBackupAvailable(*this))
 		return false;
 
-	std::filesystem::path gameFile = *myGameDirectory;
-	gameFile.append(*myMapToReplace).make_preferred();
+	if (CustomMapLoader_private::locCopyFile(CustomMapLoader_private::locGetBackupFilePath(*this), CustomMapLoader_private::locGetMapToReplacePath(*this)))
+	{
+		myActiveCustomMapIndex = -1;
+		*myActiveCustomMap = "";
+		return true;
+	}
 
-	return CustomMapLoader_private::locCopyFile(CustomMapLoader_private::locGetBackupFilePath(*this), gameFile);
+	return false;
 }
 
 bool CustomMapLoader::RefreshMaps()
@@ -175,6 +183,14 @@ bool CustomMapLoader::RefreshMaps()
 			myMaps.emplace_back(info);
 	}
 
+	myActiveCustomMapIndex = -1;
+	for (std::uint32_t index = 0; index < myMaps.size(); ++index)
+	{
+		const MapInfo& info = myMaps[index];
+		if (info.myTitle == *myActiveCustomMap)
+			myActiveCustomMapIndex = index;
+	}
+
 	return true;
 }
 
@@ -188,7 +204,14 @@ bool CustomMapLoader::LoadMap(std::int32_t anIndex)
 	std::filesystem::path gameFile = *myGameDirectory;
 	gameFile.append(CustomMapLoader_private::locMapsDirectory).append(*myMapToReplace).make_preferred();
 
-	return CustomMapLoader_private::locCopyFile(myMaps[anIndex].myMapFile, gameFile);
+	if (CustomMapLoader_private::locCopyFile(myMaps[anIndex].myMapFile, CustomMapLoader_private::locGetMapToReplacePath(*this)))
+	{
+		myActiveCustomMapIndex = anIndex;
+		*myActiveCustomMap = myMaps[myActiveCustomMapIndex].myTitle;
+		return true;
+	}
+
+	return false;
 }
 
 const std::vector<CustomMapLoader::MapInfo>& CustomMapLoader::GetMaps() const

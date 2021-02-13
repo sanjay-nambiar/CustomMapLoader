@@ -11,7 +11,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <windows.h>
 
 namespace CustomMapSelectionUI_private
 {
@@ -27,7 +26,7 @@ namespace CustomMapSelectionUI_private
 	std::shared_ptr<ImageWrapper> locPlaceholderImage;
 	std::filesystem::path locPlaceholderImagePath;
 
-	void locDrawMapGrid(const std::vector<CustomMapLoader::MapInfo>& someMapDetails)
+	std::int32_t locDrawMapGrid(const std::vector<CustomMapLoader::MapInfo>& someMapDetails, std::int32_t aSelectedIndex)
 	{
 		static std::uint32_t width = 300;
 		static std::uint32_t height = 225;
@@ -41,24 +40,25 @@ namespace CustomMapSelectionUI_private
 
 		float x = 0.f;
 		float y = 0.f;
-		for (std::uint32_t i = 0; i < static_cast<std::uint32_t>(someMapDetails.size()); i++)
+		for (std::int32_t index = 0; index < static_cast<std::int32_t>(someMapDetails.size()); index++)
 		{
-			const CustomMapLoader::MapInfo& mapDetails = someMapDetails[i];
-			ImGui::PushID(i);
+			const CustomMapLoader::MapInfo& mapDetails = someMapDetails[index];
+			ImGui::PushID(index);
 
+			/*
 			ImVec2 mousePos = ImGui::GetMousePos();
 			mousePos.x -= os.x;
 			mousePos.y -= os.y;
 			bool isNotHovering = (mousePos.x > x && mousePos.x < x + paddedWidth && mousePos.y > y && mousePos.y < y + paddedHeight);
+			*/
 
 			// Draw selection border
-			if (isNotHovering)
+			if (aSelectedIndex == index)
 			{
-				ImU32 col = ImColor(ImGui::GetStyle().Colors[ImGuiCol_HeaderHovered]);
-				x += os.x;
+				x += os.x + 5;
 				y += os.y;
-				ImGui::RenderFrame(ImVec2(x, y), ImVec2(x + paddedWidth, y + paddedHeight), col, true, 3.f);
-				x -= os.x;
+				ImGui::RenderFrame(ImVec2(x, y), ImVec2(x + paddedWidth, y + paddedHeight), locColorGreen, true, 3.f);
+				x -= os.x + 5;
 				y -= os.y;
 			}
 
@@ -71,7 +71,8 @@ namespace CustomMapSelectionUI_private
 			{
 				ImGui::SetCursorPosX(x + origin.x + padding);
 				ImGui::SetCursorPosY(y + origin.y + padding);
-				ImGui::Image(previewImage->GetImGuiTex(), ImVec2(static_cast<float>(width), static_cast<float>(height)));
+				if (ImGui::ImageButton(previewImage->GetImGuiTex(), ImVec2(static_cast<float>(width), static_cast<float>(height))))
+					aSelectedIndex = index;
 			}
 
 			// Draw map name
@@ -98,13 +99,18 @@ namespace CustomMapSelectionUI_private
 
 			ImGui::PopID();
 		}
+
+		return aSelectedIndex;
 	}
 
 	void locRenderCustomMapSelectionTab(CustomMapLoader& aCustomMapLoader)
 	{
 		if (ImGui::BeginTabItem("Custom Maps"))
 		{
-			locDrawMapGrid(aCustomMapLoader.GetMaps());
+			std::int32_t selectedIndex = locDrawMapGrid(aCustomMapLoader.GetMaps(), aCustomMapLoader.GetCurrentMap());
+			if (selectedIndex != aCustomMapLoader.GetCurrentMap())
+				aCustomMapLoader.LoadMap(selectedIndex);
+
 			ImGui::EndTabItem();
 		}
 	}
@@ -146,7 +152,7 @@ namespace CustomMapSelectionUI_private
 			ImGui::SameLine();
 			if(ImGui::Button("Restore Map", ImVec2(100, 30)))
 			{
-				locIsRestoreMapSuccessful = false; // aCustomMapLoader.RestorePristineState();
+				locIsRestoreMapSuccessful = aCustomMapLoader.RestorePristineState();
 				ImGui::OpenPopup("#cml_restore_map_details");
 			}
 
@@ -181,6 +187,11 @@ namespace CustomMapSelectionUI_private
 
 				ImGui::EndPopup();
 			}
+
+			ImGui::NewLine();
+			ImGui::NewLine();
+			for (const std::string& value : aCustomMapLoader.GetValues())
+				ImGui::Text(value.c_str());
 
 			ImGui::EndTabItem();
 		}

@@ -43,6 +43,8 @@ public:
 
 	const std::vector<MapInfo>& GetMaps() const;
 	std::int32_t GetCurrentMap() const;
+
+	const std::vector<std::string>& GetValues() const { return values; }
 private:
 	std::shared_ptr<std::string> myGameDirectory;
 	std::shared_ptr<std::string> myCustomMapDirectory;
@@ -51,4 +53,6 @@ private:
 
 	std::vector<MapInfo> myMaps;
 	std::int32_t myActiveCustomMapIndex;
+
+	std::vector<std::string> values;
 };
