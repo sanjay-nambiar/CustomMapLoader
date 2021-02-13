@@ -22,11 +22,7 @@ namespace CustomMapSelectionUI_private
 	static ImColor locColorRed = IM_COL32(255, 0, 0, 255);
 	static ImColor locColorYellow = IM_COL32(160, 160, 0, 255);
 
-	static const char* locPlaceholderImageName = "placeholder.jpg";
-	std::shared_ptr<ImageWrapper> locPlaceholderImage;
-	std::filesystem::path locPlaceholderImagePath;
-
-	std::int32_t locDrawMapGrid(const std::vector<CustomMapLoader::MapInfo>& someMapDetails, std::int32_t aSelectedIndex)
+	std::int32_t locDrawMapGrid(const std::vector<CustomMapLoader::MapInfo>& someMapDetails, CustomMapLoader& aCustomMapLoader)
 	{
 		static std::uint32_t width = 300;
 		static std::uint32_t height = 225;
@@ -34,6 +30,8 @@ namespace CustomMapSelectionUI_private
 		static std::uint32_t paddedWidth = width + (2 * padding);
 		static std::uint32_t paddedHeight = height + (2 * padding);
 		static std::uint32_t wordWrapMaxLength =  32;
+
+		std::int32_t selectedIndex = -1;
 
 		ImVec2 os = ImGui::GetCursorScreenPos();
 		ImVec2 origin = ImGui::GetCursorPos();
@@ -45,25 +43,8 @@ namespace CustomMapSelectionUI_private
 			const CustomMapLoader::MapInfo& mapDetails = someMapDetails[index];
 			ImGui::PushID(index);
 
-			/*
-			ImVec2 mousePos = ImGui::GetMousePos();
-			mousePos.x -= os.x;
-			mousePos.y -= os.y;
-			bool isNotHovering = (mousePos.x > x && mousePos.x < x + paddedWidth && mousePos.y > y && mousePos.y < y + paddedHeight);
-			*/
-
-			// Draw selection border
-			if (aSelectedIndex == index)
-			{
-				x += os.x + 5;
-				y += os.y;
-				ImGui::RenderFrame(ImVec2(x, y), ImVec2(x + paddedWidth, y + paddedHeight), locColorGreen, true, 3.f);
-				x -= os.x + 5;
-				y -= os.y;
-			}
-
 			// Draw image
-			auto previewImage = locPlaceholderImage;
+			auto previewImage = aCustomMapLoader.GetPlaceholderImage();
 			if (mapDetails.myPreviewImage && mapDetails.myPreviewImage->IsLoadedForImGui())
 				previewImage = mapDetails.myPreviewImage;
 
@@ -72,7 +53,7 @@ namespace CustomMapSelectionUI_private
 				ImGui::SetCursorPosX(x + origin.x + padding);
 				ImGui::SetCursorPosY(y + origin.y + padding);
 				if (ImGui::ImageButton(previewImage->GetImGuiTex(), ImVec2(static_cast<float>(width), static_cast<float>(height))))
-					aSelectedIndex = index;
+					selectedIndex = index;
 			}
 
 			// Draw map name
@@ -100,15 +81,15 @@ namespace CustomMapSelectionUI_private
 			ImGui::PopID();
 		}
 
-		return aSelectedIndex;
+		return selectedIndex;
 	}
 
 	void locRenderCustomMapSelectionTab(CustomMapLoader& aCustomMapLoader)
 	{
 		if (ImGui::BeginTabItem("Custom Maps"))
 		{
-			std::int32_t selectedIndex = locDrawMapGrid(aCustomMapLoader.GetMaps(), aCustomMapLoader.GetCurrentMap());
-			if (selectedIndex != aCustomMapLoader.GetCurrentMap())
+			std::int32_t selectedIndex = locDrawMapGrid(aCustomMapLoader.GetMaps(), aCustomMapLoader);
+			if (selectedIndex != -1)
 				aCustomMapLoader.LoadMap(selectedIndex);
 
 			ImGui::EndTabItem();
@@ -122,15 +103,7 @@ namespace CustomMapSelectionUI_private
 	{
 		if (ImGui::BeginTabItem("Settings"))
 		{
-			ImGui::NewLine();
-			ImGui::TextColored(locColorYellow, " Map to replace: %s", aCustomMapLoader.GetMapToReplace().c_str());
-
 			char buffer[1024];
-
-			ImGui::NewLine();
-			strcpy(buffer, aCustomMapLoader.GetGameDirectory().string().c_str());
-			ImGui::InputText("Rocket League Path", buffer, 128, ImGuiInputTextFlags_CharsNoBlank);
-			aCustomMapLoader.SetGameDirectory(buffer);
 
 			ImGui::NewLine();
 			strcpy(buffer, aCustomMapLoader.GetCustomMapDirectory().string().c_str());
@@ -147,13 +120,6 @@ namespace CustomMapSelectionUI_private
 					aCustomMapLoader.RefreshMaps();
 
 				ImGui::OpenPopup("#cml_map_refresh_details");
-			}
-
-			ImGui::SameLine();
-			if(ImGui::Button("Restore Map", ImVec2(100, 30)))
-			{
-				locIsRestoreMapSuccessful = aCustomMapLoader.RestorePristineState();
-				ImGui::OpenPopup("#cml_restore_map_details");
 			}
 
 			ImVec2 cursorPos = ImGui::GetCursorPos();
@@ -177,31 +143,17 @@ namespace CustomMapSelectionUI_private
 
 				ImGui::EndPopup();
 			}
-
-			if (ImGui::BeginPopup("#cml_restore_map_details"))
-			{
-				if (locIsRestoreMapSuccessful)
-					ImGui::TextColored(locColorGreen, "Restored original map from backup!");
-				else
-					ImGui::TextColored(locColorRed, "Failed restoring original map from backup!");
-
-				ImGui::EndPopup();
-			}
-
-			ImGui::NewLine();
-			ImGui::NewLine();
-			for (const std::string& value : aCustomMapLoader.GetValues())
-				ImGui::Text(value.c_str());
-
-			ImGui::EndTabItem();
 		}
 	}
 }
 
-CustomMapSelectionUI::CustomMapSelectionUI(CustomMapLoader& aMapLoader)
-	: myIsWindowOpen(false)
-	, myMapLoader(aMapLoader)
+CustomMapSelectionUI::CustomMapSelectionUI()
+: myIsWindowOpen(false)
+{}
+
+void CustomMapSelectionUI::InitializeDependencies(std::shared_ptr<CustomMapLoader> aCustomMapLoader)
 {
+	myCustomMapLoader = aCustomMapLoader;
 }
 
 void CustomMapSelectionUI::SetImGuiContext(std::uintptr_t aContext)
@@ -235,8 +187,8 @@ bool CustomMapSelectionUI::Render()
 	{
 		if (ImGui::BeginTabBar("#TabBar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_NoTooltip))
 		{
-			CustomMapSelectionUI_private::locRenderSettingsTab(myMapLoader);
-			CustomMapSelectionUI_private::locRenderCustomMapSelectionTab(myMapLoader);
+			CustomMapSelectionUI_private::locRenderSettingsTab(*myCustomMapLoader);
+			CustomMapSelectionUI_private::locRenderCustomMapSelectionTab(*myCustomMapLoader);
 			ImGui::EndTabBar();
 		}
 	}
@@ -268,13 +220,4 @@ bool CustomMapSelectionUI::ShouldBlockInput()
 bool CustomMapSelectionUI::IsActiveOverlay()
 {
 	return true;
-}
-
-void CustomMapSelectionUI::LoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory)
-{
-	std::filesystem::path imagePath = aPluginDataDirectory;
-	imagePath.append(CustomMapSelectionUI_private::locPlaceholderImageName).make_preferred();
-	CustomMapSelectionUI_private::locPlaceholderImage = std::make_shared<ImageWrapper>(imagePath, false, true);
-
-	CustomMapSelectionUI_private::locPlaceholderImagePath = imagePath;
 }

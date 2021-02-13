@@ -8,8 +8,10 @@
 class CustomMapSelectionUI
 {
 public:
-	CustomMapSelectionUI(CustomMapLoader& aMapLoader);
+	CustomMapSelectionUI();
 	~CustomMapSelectionUI() = default;
+
+	void InitializeDependencies(std::shared_ptr<CustomMapLoader> aCustomMapLoader);
 
 	void SetImGuiContext(std::uintptr_t aContext);
 	void SetTitle(const std::string& aTitle);
@@ -26,11 +28,9 @@ public:
 	bool ShouldBlockInput();
 	bool IsActiveOverlay();
 
-	void LoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory);
-
 private:
 	bool myIsWindowOpen;
-	CustomMapLoader& myMapLoader;
-
 	std::string myTitle;
+
+	std::shared_ptr<CustomMapLoader> myCustomMapLoader;
 };

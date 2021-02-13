@@ -26,27 +26,17 @@ CustomMapLoaderPlugin::CustomMapLoaderPlugin()
 
 void CustomMapLoaderPlugin::onLoad()
 {
-	myMapLoader.reset(new CustomMapLoader());
-	myMapSelectionUI.reset(new CustomMapSelectionUI(*myMapLoader));
+	myMapLoader = std::make_shared<CustomMapLoader>();
+	myMapSelectionUI = std::make_shared<CustomMapSelectionUI>();
 
-	myMapSelectionUI->SetTitle(FULL_PLUGIN_NAME);
+	myMapLoader->InitializeDependencies(cvarManager, myMapSelectionUI, FULL_PLUGIN_NAME);
+	myMapSelectionUI->InitializeDependencies(myMapLoader);
 
-	myBakkesModConfigFolder = gameWrapper->GetBakkesModPath() / L"cfg";
-	myPluginDataDirectory = gameWrapper->GetDataFolder() / L"CustomMapLoader";
-
-	myMapSelectionUI->LoadPlaceholderImage(myPluginDataDirectory.string());
-
-	cvarManager->registerCvar("cml_map_to_replace", CustomMapLoaderPlugin_private::locCmlMapToReplace, "The map file to replace with workshop map", true, false, 0.0f, false, 0.0f, true)
-		.bindTo(myMapLoader->myMapToReplace);
-
-	cvarManager->registerCvar("cml_rocket_league_path", CustomMapLoaderPlugin_private::locCmlRocketLeaguePath, "Epic Games Rocket League path", true, false, 0.0f, false, 0.0f, true)
-		.bindTo(myMapLoader->myGameDirectory);
+	std::filesystem::path pluginDataDirectory = gameWrapper->GetDataFolder() / L"CustomMapLoader";
+	myMapLoader->LoadPlaceholderImage(pluginDataDirectory.string());
 
 	cvarManager->registerCvar("cml_custom_map_path", CustomMapLoaderPlugin_private::locCmlCustomMapPath, "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myCustomMapDirectory);
-
-	cvarManager->registerCvar("cml_active_custom_map", "", "Currently Active Custom Map", true, false, 0.0f, false, 0.0f, true)
-		.bindTo(myMapLoader->myActiveCustomMap);
 
 	cvarManager->registerCvar("cml_error_message", "", "Error messages", false);
 }

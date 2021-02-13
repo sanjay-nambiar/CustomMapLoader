@@ -12,7 +12,6 @@ class CustomMapLoader
 {
 public:
 	friend class CustomMapLoaderPlugin;
-	friend class CustomMapSelectionUI;
 
 	struct MapInfo
 	{
@@ -25,34 +24,26 @@ public:
 	CustomMapLoader();
 	~CustomMapLoader() = default;
 
-	void SetGameDirectory(const std::string& aGameDirectory);
-	void SetCustomMapDirectory(const std::string& aCustomMapDirectory);
-	void SetMapToReplace(const std::string& aMapToReplace);
+	void InitializeDependencies(const std::shared_ptr<CVarManagerWrapper>& aCvarManager, std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI,
+		const std::string& aPluginFullName);
 
-	std::filesystem::path GetGameDirectory() const;
+	void SetCustomMapDirectory(const std::string& aCustomMapDirectory);
 	std::filesystem::path GetCustomMapDirectory() const;
-	std::string GetMapToReplace() const;
 
 	bool ValidateDirectories(std::vector<std::string>& errorMessages);
 
-	bool BackupPristineState();
-	bool RestorePristineState();
+	void LoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory);
+	std::shared_ptr<ImageWrapper> GetPlaceholderImage() const;
 
 	bool RefreshMaps();
 	bool LoadMap(std::int32_t anIndex);
 
 	const std::vector<MapInfo>& GetMaps() const;
-	std::int32_t GetCurrentMap() const;
-
-	const std::vector<std::string>& GetValues() const { return values; }
 private:
-	std::shared_ptr<std::string> myGameDirectory;
+	std::shared_ptr<CVarManagerWrapper> myCVarManager;
+	std::shared_ptr<CustomMapSelectionUI> myCustomMapSelectionUI;
+
 	std::shared_ptr<std::string> myCustomMapDirectory;
-	std::shared_ptr<std::string> myMapToReplace;
-	std::shared_ptr<std::string> myActiveCustomMap;
 
 	std::vector<MapInfo> myMaps;
-	std::int32_t myActiveCustomMapIndex;
-
-	std::vector<std::string> values;
 };

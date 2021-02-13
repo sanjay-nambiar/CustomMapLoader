@@ -30,11 +30,8 @@ public:
 	bool IsActiveOverlay() override;
 
 private:
-	std::unique_ptr<CustomMapLoader> myMapLoader;
-	std::unique_ptr<CustomMapSelectionUI> myMapSelectionUI;
-
-	std::filesystem::path myBakkesModConfigFolder;
-	std::filesystem::path myPluginDataDirectory;
+	std::shared_ptr<CustomMapLoader> myMapLoader;
+	std::shared_ptr<CustomMapSelectionUI> myMapSelectionUI;
 
 	bool myIsRendererInitialized;
 };
