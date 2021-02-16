@@ -4,19 +4,56 @@
 #include "CustomMapSelectionUI.h"
 #include "Version.h"
 
-BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, PERMISSION_ALL)
+#include <fstream>
+#include <sstream>
+
+BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, 0x00)
 
 namespace CustomMapLoaderPlugin_private
 {
-	std::string locGetConfigFileName(const std::filesystem::path& aConfigFolder)
+	constexpr const char* locDefaultLaunchMenuKeyBind = "F1";
+	constexpr const char* locDefaultLoadMapKeyBind = "Zero";
+
+	constexpr const char* locCustomMapPath = "D:/Games/Personal Game Content/Rocket League/Custom Maps/Custom/Maps";
+	static const char* locLoadMapCommand = "load_workshop";
+
+	std::filesystem::path locBakkesModConfigFolder;
+
+	std::string locGetConfigFileName()
 	{
-		return std::filesystem::path(aConfigFolder).append("/custom_map_loader.cfg").string();
+		return locBakkesModConfigFolder.append("config.cfg").string();
 	}
 
-	static const char* locCmlMapToReplace = "Labs_Underpass_P.upk";
-	static const char* locCmlRocketLeaguePath = "D:/Games/Epic Games/Games/rocketleague";
-	static const char* locCmlCustomMapPath = "D:/Games/Personal Game Content/Rocket Leauge/Custom Maps/Custom/Maps";
-	static const char* locCmlActiveCustomMap = "None";
+	std::string locGetBindsFileName()
+	{
+		return locBakkesModConfigFolder.append("binds.cfg").string();
+	}
+
+	bool locIsCommandBound(const std::string& aCommand)
+	{
+		std::ifstream file(locGetBindsFileName());
+		if (file.is_open())
+		{
+			std::string line;
+			while (getline(file, line))
+			{
+				if (line.find(aCommand) != std::string::npos)
+				{
+					file.close();
+					return true;
+				}
+			}
+			file.close();
+		}
+
+		return false;
+	}
+
+	bool locIsWindowBound(const std::string& aWindowName)
+	{
+		const std::string bind = "togglemenu " + aWindowName;
+		return locIsCommandBound(bind);
+	}
 }
 
 CustomMapLoaderPlugin::CustomMapLoaderPlugin()
@@ -26,23 +63,63 @@ CustomMapLoaderPlugin::CustomMapLoaderPlugin()
 
 void CustomMapLoaderPlugin::onLoad()
 {
+	CustomMapLoaderPlugin_private::locBakkesModConfigFolder = gameWrapper->GetBakkesModPath() / L"cfg";
+
+	std::filesystem::path pluginDataDirectory = gameWrapper->GetDataFolder() / L"CustomMapLoader";
+
+	// Create objects and initialize sub systems
 	myMapLoader = std::make_shared<CustomMapLoader>();
 	myMapSelectionUI = std::make_shared<CustomMapSelectionUI>();
 
-	myMapLoader->InitializeDependencies(cvarManager, myMapSelectionUI, FULL_PLUGIN_NAME);
-	myMapSelectionUI->InitializeDependencies(myMapLoader);
+	myMapLoader->Initialize(cvarManager, myMapSelectionUI, FULL_PLUGIN_NAME, pluginDataDirectory.string());
+	myMapSelectionUI->Initialize(myMapLoader);
 
-	std::filesystem::path pluginDataDirectory = gameWrapper->GetDataFolder() / L"CustomMapLoader";
-	myMapLoader->LoadPlaceholderImage(pluginDataDirectory.string());
+	myLaunchWindowKeybind = std::make_shared<std::string>();
+	myLoadMapKeybind = std::make_shared<std::string>();
 
-	cvarManager->registerCvar("cml_custom_map_path", CustomMapLoaderPlugin_private::locCmlCustomMapPath, "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
+	// Register console vars and commands
+	cvarManager->registerCvar("cml_custom_map_path", CustomMapLoaderPlugin_private::locCustomMapPath, "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myCustomMapDirectory);
 
+	cvarManager->registerCvar("cml_selected_map", "", "Selected custom map", true, false, 0.0f, false, 0.0f, true)
+		.bindTo(myMapLoader->myModel.mySelectedMap);
+
 	cvarManager->registerCvar("cml_error_message", "", "Error messages", false);
+
+	cvarManager->registerNotifier("cml_load_custom_map", [this](const std::vector<std::string>&)
+	{
+		std::stringstream commandBuilder;
+		commandBuilder << CustomMapLoaderPlugin_private::locLoadMapCommand << " \"" << *myMapLoader->GetUIModel().mySelectedMap
+			<< "\"";
+		cvarManager->executeCommand(commandBuilder.str());
+    }, "Loads currently selected custom map", PERMISSION_ALL);
+
+	cvarManager->registerCvar("cml_menu_keybind", CustomMapLoaderPlugin_private::locDefaultLaunchMenuKeyBind, "Keybind for Custom Map Loader menu")
+		.addOnValueChanged([this](std::string aNewValue, CVarWrapper)
+		{
+			*myLaunchWindowKeybind = aNewValue;
+		});
+
+	cvarManager->registerCvar("cml_load_map_keybind", CustomMapLoaderPlugin_private::locDefaultLoadMapKeyBind, "Keybind for launching custom map")
+		.addOnValueChanged([this](std::string aNewValue, CVarWrapper)
+		{
+			*myLoadMapKeybind = aNewValue;
+		});
+
+	// Set binds if not already bound
+	std::string toggleWindowCommand = "togglemenu " + GetMenuName();
+	if (!CustomMapLoaderPlugin_private::locIsCommandBound(toggleWindowCommand))
+		cvarManager->setBind(*myLaunchWindowKeybind, toggleWindowCommand);
+
+	if (!CustomMapLoaderPlugin_private::locIsCommandBound("cml_load_custom_map"))
+		cvarManager->setBind(*myLoadMapKeybind, "cml_load_custom_map");
+
+	cvarManager->loadCfg(CustomMapLoaderPlugin_private::locGetConfigFileName());
 }
 
 void CustomMapLoaderPlugin::onUnload()
 {
+	cvarManager->backupCfg(CustomMapLoaderPlugin_private::locGetConfigFileName());
 }
 
 void CustomMapLoaderPlugin::OnOpen()

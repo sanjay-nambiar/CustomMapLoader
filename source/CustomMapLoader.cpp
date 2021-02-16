@@ -9,14 +9,28 @@
 
 namespace CustomMapLoader_private
 {
-	static const char* locLoadMapCommand = "load_workshop ";
-
 	static std::vector<std::string> locImageTypes = { ".jpg", ".png" };
 	static std::vector<std::string> locMapTypes = { ".udk", ".upk" };
 
 	static const char* locPlaceholderImageName = "placeholder.jpg";
 	std::shared_ptr<ImageWrapper> locPlaceholderImage;
-	std::filesystem::path locPlaceholderImagePath;
+
+	void locLoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory)
+	{
+		std::filesystem::path imagePath = aPluginDataDirectory;
+		imagePath.append(locPlaceholderImageName).make_preferred();
+
+		locPlaceholderImage = std::make_shared<ImageWrapper>(imagePath, false, true);
+	}
+
+	void locCloseOpenMenus(std::shared_ptr<CVarManagerWrapper> aCVarManagerconst, CustomMapSelectionUI& aCustomMapSelectionUI)
+	{
+		aCVarManagerconst->executeCommand("closemenu queuemenu");
+		aCVarManagerconst->executeCommand("closemenu settings");
+		aCVarManagerconst->executeCommand("closemenu console2");
+		aCVarManagerconst->executeCommand("closemenu pluginmanager");
+		aCVarManagerconst->executeCommand("closemenu " + aCustomMapSelectionUI.GetMenuName());
+	}
 
 	template <typename TimePoint>
 	std::string locTimeString(TimePoint tp)
@@ -59,20 +73,24 @@ namespace CustomMapLoader_private
 
 CustomMapLoader::CustomMapLoader()
 : myCustomMapDirectory(std::make_shared<std::string>())
-{}
+{
+	myModel.mySelectedMap = std::make_shared<std::string>();
+}
 
-void CustomMapLoader::InitializeDependencies(const std::shared_ptr<CVarManagerWrapper>& aCvarManager, std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI,
-	const std::string& aPluginFullName)
+void CustomMapLoader::Initialize(const std::shared_ptr<CVarManagerWrapper>& aCvarManager, std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI,
+	const std::string& aPluginFullName, const std::filesystem::path& aPluginDataDirectory)
 {
 	myCVarManager = aCvarManager;
 	myCustomMapSelectionUI = aCustomMapSelectionUI;
 
-	myCustomMapSelectionUI->SetTitle(aPluginFullName);
+	myModel.myTitle = aPluginFullName;
+	CustomMapLoader_private::locLoadPlaceholderImage(aPluginDataDirectory);
 }
 
 void CustomMapLoader::SetCustomMapDirectory(const std::string& aCustomMapDirectory)
 {
 	*myCustomMapDirectory = aCustomMapDirectory;
+	myCVarManager->getCvar("cml_custom_map_path").setValue(aCustomMapDirectory);
 }
 
 std::filesystem::path CustomMapLoader::GetCustomMapDirectory() const
@@ -80,32 +98,17 @@ std::filesystem::path CustomMapLoader::GetCustomMapDirectory() const
 	return std::filesystem::path(*myCustomMapDirectory).make_preferred();
 }
 
-bool CustomMapLoader::ValidateDirectories(std::vector<std::string>& errorMessages)
-{
-	if (std::filesystem::exists(GetCustomMapDirectory()))
-		return true;
-
-	errorMessages.push_back("Backup directory does not exist!");
-	return false;
-}
-
-void CustomMapLoader::LoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory)
-{
-	std::filesystem::path imagePath = aPluginDataDirectory;
-	imagePath.append(CustomMapLoader_private::locPlaceholderImageName).make_preferred();
-	CustomMapLoader_private::locPlaceholderImage = std::make_shared<ImageWrapper>(imagePath, false, true);
-
-	CustomMapLoader_private::locPlaceholderImagePath = imagePath;
-}
-
-std::shared_ptr<ImageWrapper> CustomMapLoader::GetPlaceholderImage() const
-{
-	return CustomMapLoader_private::locPlaceholderImage;
-}
-
 bool CustomMapLoader::RefreshMaps()
 {
-	myMaps.erase(myMaps.begin(), myMaps.end());
+	myModel.myErrorMessages.erase(myModel.myErrorMessages.begin(), myModel.myErrorMessages.end());
+
+	if (!std::filesystem::exists(GetCustomMapDirectory()))
+	{
+		myModel.myErrorMessages.push_back("Backup directory does not exist!");
+		return false;
+	}
+
+	myModel.myMaps.erase(myModel.myMaps.begin(), myModel.myMaps.end());
 
 	for (const auto& entry : std::filesystem::directory_iterator(GetCustomMapDirectory()))
 	{
@@ -114,28 +117,23 @@ bool CustomMapLoader::RefreshMaps()
 
 		MapInfo info = CustomMapLoader_private::locGetMapDetails(entry, *this);
 		if (!info.myMapFile.empty())
-			myMaps.emplace_back(info);
+			myModel.myMaps.emplace_back(info);
 	}
 
 	return true;
 }
 
-bool CustomMapLoader::LoadMap(std::int32_t anIndex)
+bool CustomMapLoader::SelectCustomMap(std::int32_t anIndex)
 {
-	if (anIndex < 0 && anIndex >= myMaps.size())
+	if (anIndex < 0 && anIndex >= myModel.myMaps.size())
 		return false;
 
-	std::stringstream commandBuilder;
-	commandBuilder << CustomMapLoader_private::locLoadMapCommand << '"' << myMaps[anIndex].myMapFile << '"';
+	myCVarManager->getCvar("cml_selected_map").setValue(myModel.myMaps[anIndex].myMapFile.string());
 
-	std::string command;
-	commandBuilder.str(command);
-	myCVarManager->executeCommand(command);
-
-	return false;
+	return true;
 }
 
-const std::vector<CustomMapLoader::MapInfo>& CustomMapLoader::GetMaps() const
+const CustomMapLoader::UIModel& CustomMapLoader::GetUIModel() const
 {
-	return myMaps;
+	return myModel;
 }

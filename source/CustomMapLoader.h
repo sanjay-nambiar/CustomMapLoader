@@ -8,6 +8,8 @@
 #include "CustomMapLoaderPlugin.h"
 #include "CustomMapSelectionUI.h"
 
+class ImageWrapper;
+
 class CustomMapLoader
 {
 public:
@@ -21,29 +23,33 @@ public:
 		std::shared_ptr<ImageWrapper> myPreviewImage;
 	};
 
+	struct UIModel
+	{
+		std::string myTitle;
+		std::vector<MapInfo> myMaps;
+		std::shared_ptr<std::string> mySelectedMap;
+		std::shared_ptr<ImageWrapper> myPlaceholderImage;
+		std::vector<std::string> myErrorMessages;
+	};
+
 	CustomMapLoader();
 	~CustomMapLoader() = default;
 
-	void InitializeDependencies(const std::shared_ptr<CVarManagerWrapper>& aCvarManager, std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI,
-		const std::string& aPluginFullName);
+	void Initialize(const std::shared_ptr<CVarManagerWrapper>& aCvarManager, std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI,
+		const std::string& aPluginFullName, const std::filesystem::path& aPluginDataDirectory);
 
 	void SetCustomMapDirectory(const std::string& aCustomMapDirectory);
 	std::filesystem::path GetCustomMapDirectory() const;
 
-	bool ValidateDirectories(std::vector<std::string>& errorMessages);
-
-	void LoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory);
-	std::shared_ptr<ImageWrapper> GetPlaceholderImage() const;
-
 	bool RefreshMaps();
-	bool LoadMap(std::int32_t anIndex);
+	bool SelectCustomMap(std::int32_t anIndex);
 
-	const std::vector<MapInfo>& GetMaps() const;
+	const CustomMapLoader::UIModel& GetUIModel() const;
 private:
 	std::shared_ptr<CVarManagerWrapper> myCVarManager;
 	std::shared_ptr<CustomMapSelectionUI> myCustomMapSelectionUI;
 
 	std::shared_ptr<std::string> myCustomMapDirectory;
 
-	std::vector<MapInfo> myMaps;
+	CustomMapLoader::UIModel myModel;
 };
