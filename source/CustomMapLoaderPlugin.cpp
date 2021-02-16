@@ -88,18 +88,24 @@ void CustomMapLoaderPlugin::onLoad()
 
 	cvarManager->registerNotifier("cml_load_custom_map", [this](const std::vector<std::string>&)
 	{
+		if (*myMapLoader->GetUIModel().mySelectedMap == "")
+			return;
+
 		std::stringstream commandBuilder;
 		commandBuilder << CustomMapLoaderPlugin_private::locLoadMapCommand << " \"" << *myMapLoader->GetUIModel().mySelectedMap
 			<< "\"";
+
 		cvarManager->executeCommand(commandBuilder.str());
     }, "Loads currently selected custom map", PERMISSION_ALL);
 
+	*myLaunchWindowKeybind = CustomMapLoaderPlugin_private::locDefaultLaunchMenuKeyBind;
 	cvarManager->registerCvar("cml_menu_keybind", CustomMapLoaderPlugin_private::locDefaultLaunchMenuKeyBind, "Keybind for Custom Map Loader menu")
 		.addOnValueChanged([this](std::string aNewValue, CVarWrapper)
 		{
 			*myLaunchWindowKeybind = aNewValue;
 		});
 
+	*myLoadMapKeybind = CustomMapLoaderPlugin_private::locDefaultLoadMapKeyBind;
 	cvarManager->registerCvar("cml_load_map_keybind", CustomMapLoaderPlugin_private::locDefaultLoadMapKeyBind, "Keybind for launching custom map")
 		.addOnValueChanged([this](std::string aNewValue, CVarWrapper)
 		{
@@ -113,8 +119,6 @@ void CustomMapLoaderPlugin::onLoad()
 
 	if (!CustomMapLoaderPlugin_private::locIsCommandBound("cml_load_custom_map"))
 		cvarManager->setBind(*myLoadMapKeybind, "cml_load_custom_map");
-
-	cvarManager->loadCfg(CustomMapLoaderPlugin_private::locGetConfigFileName());
 }
 
 void CustomMapLoaderPlugin::onUnload()
