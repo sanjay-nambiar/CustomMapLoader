@@ -13,6 +13,9 @@
     <Filter Include="config">
       <UniqueIdentifier>{7d7212cc-8793-499c-aef5-953914cb1f11}</UniqueIdentifier>
     </Filter>
+    <Filter Include="build">
+      <UniqueIdentifier>{0d6380f5-ad25-4fac-b805-efd1cb995e0c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\source\CustomMapLoader.cpp">
@@ -72,6 +75,9 @@
   <ItemGroup>
     <None Include="..\config\CustomMapLoader.set">
       <Filter>config</Filter>
+    </None>
+    <None Include="BuildHelper.ps1">
+      <Filter>build</Filter>
     </None>
   </ItemGroup>
 </Project>
