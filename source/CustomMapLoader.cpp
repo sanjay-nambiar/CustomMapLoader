@@ -86,7 +86,7 @@ void CustomMapLoader::Initialize(const std::shared_ptr<GameWrapper> aGameWrapper
 	myCVarManager = aCvarManager;
 	myCustomMapSelectionUI = aCustomMapSelectionUI;
 
-	myModel.myTitle = aPluginFullName;
+	myModel.myWindowTitle = aPluginFullName;
 	CustomMapLoader_private::locLoadPlaceholderImage(aPluginDataDirectory);
 }
 

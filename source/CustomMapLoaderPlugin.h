@@ -33,8 +33,5 @@ private:
 	std::shared_ptr<CustomMapLoader> myMapLoader;
 	std::shared_ptr<CustomMapSelectionUI> myMapSelectionUI;
 
-	std::shared_ptr<std::string> myLaunchWindowKeybind;
-	std::shared_ptr<std::string> myLoadMapKeybind;
-
 	bool myIsWindowInitialized;
 };

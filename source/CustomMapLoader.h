@@ -25,7 +25,7 @@ public:
 
 	struct UIModel
 	{
-		std::string myTitle;
+		std::string myWindowTitle;
 		std::vector<MapInfo> myMaps;
 		std::shared_ptr<std::string> mySelectedMap;
 		std::shared_ptr<ImageWrapper> myPlaceholderImage;

@@ -221,7 +221,7 @@ bool CustomMapSelectionUI::Render()
 	std::int32_t selectedIndex = -1;
 
 	const CustomMapLoader::UIModel& uiModel = myCustomMapLoader->GetUIModel();
-	if (ImGui::Begin(uiModel.myTitle.c_str(), &myIsWindowOpen))
+	if (ImGui::Begin(uiModel.myWindowTitle.c_str(), &myIsWindowOpen))
 	{
 		if (ImGui::BeginTabBar("#TabBar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_NoTooltip))
 		{
@@ -245,7 +245,7 @@ std::string CustomMapSelectionUI::GetMenuName() const
 
 std::string CustomMapSelectionUI::GetMenuTitle() const
 {
-	return myCustomMapLoader->GetUIModel().myTitle;
+	return myCustomMapLoader->GetUIModel().myWindowTitle;
 }
 
 bool CustomMapSelectionUI::IsWindowOpen() const

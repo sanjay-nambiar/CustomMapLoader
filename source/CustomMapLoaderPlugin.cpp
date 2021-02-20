@@ -25,9 +25,6 @@ void CustomMapLoaderPlugin::onLoad()
 	myMapLoader->Initialize(gameWrapper, cvarManager, myMapSelectionUI, FULL_PLUGIN_NAME, pluginDataDirectory.string());
 	myMapSelectionUI->Initialize(myMapLoader);
 
-	myLaunchWindowKeybind = std::make_shared<std::string>();
-	myLoadMapKeybind = std::make_shared<std::string>();
-
 	// Register console vars and commands
 	cvarManager->registerCvar("cml_custom_map_path", "", "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myCustomMapDirectory);
