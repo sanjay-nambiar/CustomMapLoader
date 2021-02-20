@@ -35,7 +35,7 @@ public:
 	CustomMapLoader();
 	~CustomMapLoader() = default;
 
-	void Initialize(const std::shared_ptr<CVarManagerWrapper>& aCvarManager, std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI,
+	void Initialize(const std::shared_ptr<GameWrapper> aGameWrapper, const std::shared_ptr<CVarManagerWrapper>& aCvarManager, std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI,
 		const std::string& aPluginFullName, const std::filesystem::path& aPluginDataDirectory);
 
 	void SetCustomMapDirectory(const std::string& aCustomMapDirectory);
@@ -43,9 +43,13 @@ public:
 
 	bool RefreshMaps();
 	bool SelectCustomMap(std::int32_t anIndex);
+	void LoadSelectedMap();
+
+	void Execute(const std::function<void(GameWrapper*)>& aFunction);
 
 	const CustomMapLoader::UIModel& GetUIModel() const;
 private:
+	std::shared_ptr<GameWrapper> myGameWrapper;
 	std::shared_ptr<CVarManagerWrapper> myCVarManager;
 	std::shared_ptr<CustomMapSelectionUI> myCustomMapSelectionUI;
 

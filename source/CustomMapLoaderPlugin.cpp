@@ -11,11 +11,10 @@ BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, 0x
 
 namespace CustomMapLoaderPlugin_private
 {
-	constexpr const char* locDefaultLaunchMenuKeyBind = "F1";
-	constexpr const char* locDefaultLoadMapKeyBind = "Zero";
+	constexpr const char* locDefaultLaunchMenuKeyBind = "";
+	constexpr const char* locDefaultLoadMapKeyBind = "";
 
 	constexpr const char* locCustomMapPath = "D:/Games/Personal Game Content/Rocket League/Custom Maps/Custom/Maps";
-	static const char* locLoadMapCommand = "load_workshop";
 
 	std::filesystem::path locBakkesModConfigFolder;
 
@@ -71,7 +70,7 @@ void CustomMapLoaderPlugin::onLoad()
 	myMapLoader = std::make_shared<CustomMapLoader>();
 	myMapSelectionUI = std::make_shared<CustomMapSelectionUI>();
 
-	myMapLoader->Initialize(cvarManager, myMapSelectionUI, FULL_PLUGIN_NAME, pluginDataDirectory.string());
+	myMapLoader->Initialize(gameWrapper, cvarManager, myMapSelectionUI, FULL_PLUGIN_NAME, pluginDataDirectory.string());
 	myMapSelectionUI->Initialize(myMapLoader);
 
 	myLaunchWindowKeybind = std::make_shared<std::string>();
@@ -88,14 +87,7 @@ void CustomMapLoaderPlugin::onLoad()
 
 	cvarManager->registerNotifier("cml_load_custom_map", [this](const std::vector<std::string>&)
 	{
-		if (*myMapLoader->GetUIModel().mySelectedMap == "")
-			return;
-
-		std::stringstream commandBuilder;
-		commandBuilder << CustomMapLoaderPlugin_private::locLoadMapCommand << " \"" << *myMapLoader->GetUIModel().mySelectedMap
-			<< "\"";
-
-		cvarManager->executeCommand(commandBuilder.str());
+		myMapLoader->LoadSelectedMap();
     }, "Loads currently selected custom map", PERMISSION_ALL);
 
 	*myLaunchWindowKeybind = CustomMapLoaderPlugin_private::locDefaultLaunchMenuKeyBind;

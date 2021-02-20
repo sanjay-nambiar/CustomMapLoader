@@ -9,6 +9,8 @@
 
 namespace CustomMapLoader_private
 {
+	static const char* locLoadMapCommand = "load_workshop";
+
 	static std::vector<std::string> locImageTypes = { ".jpg", ".png" };
 	static std::vector<std::string> locMapTypes = { ".udk", ".upk" };
 
@@ -77,9 +79,10 @@ CustomMapLoader::CustomMapLoader()
 	myModel.mySelectedMap = std::make_shared<std::string>();
 }
 
-void CustomMapLoader::Initialize(const std::shared_ptr<CVarManagerWrapper>& aCvarManager, std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI,
-	const std::string& aPluginFullName, const std::filesystem::path& aPluginDataDirectory)
+void CustomMapLoader::Initialize(const std::shared_ptr<GameWrapper> aGameWrapper, const std::shared_ptr<CVarManagerWrapper>& aCvarManager,
+	std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI, const std::string& aPluginFullName, const std::filesystem::path& aPluginDataDirectory)
 {
+	myGameWrapper = aGameWrapper;
 	myCVarManager = aCvarManager;
 	myCustomMapSelectionUI = aCustomMapSelectionUI;
 
@@ -104,7 +107,7 @@ bool CustomMapLoader::RefreshMaps()
 
 	if (!std::filesystem::exists(GetCustomMapDirectory()))
 	{
-		myModel.myErrorMessages.push_back("Backup directory does not exist!");
+		myModel.myErrorMessages.push_back("Custom map directory not found.");
 		return false;
 	}
 
@@ -131,6 +134,36 @@ bool CustomMapLoader::SelectCustomMap(std::int32_t anIndex)
 	myCVarManager->getCvar("cml_selected_map").setValue(myModel.myMaps[anIndex].myMapFile.string());
 
 	return true;
+}
+
+void CustomMapLoader::LoadSelectedMap()
+{
+	if (*myModel.mySelectedMap == "")
+		return;
+
+	std::stringstream commandBuilder;
+	commandBuilder << CustomMapLoader_private::locLoadMapCommand << " \"" << *myModel.mySelectedMap << "\"";
+
+	myCVarManager->executeCommand(commandBuilder.str());
+}
+
+void CustomMapLoader::Execute(const std::function<void(GameWrapper*)>& aFunction)
+{
+	myGameWrapper->Execute([this, aFunction](GameWrapper* aGameWrapper)
+	{
+		try
+		{
+			aFunction(aGameWrapper);
+		}
+		catch (const std::exception& e)
+		{
+			myCVarManager->log(std::string("[CRITICAL] [CML] Execute threw exception: ") + e.what());
+		}
+		catch (...)
+		{
+			myCVarManager->log("[CRITICAL] [CML] Execute threw an exception");
+		}
+	});
 }
 
 const CustomMapLoader::UIModel& CustomMapLoader::GetUIModel() const
