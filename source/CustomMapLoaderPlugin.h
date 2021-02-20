@@ -36,5 +36,5 @@ private:
 	std::shared_ptr<std::string> myLaunchWindowKeybind;
 	std::shared_ptr<std::string> myLoadMapKeybind;
 
-	bool myIsRendererInitialized;
+	bool myIsWindowInitialized;
 };

@@ -95,17 +95,17 @@ namespace CustomMapSelectionUI_private
 			ImGui::PushID(index);
 
 			// Highlight currently selected map
-			if (aSelectedMap == mapDetails.myMapFile.string())
+			if (aSelectedMap == mapDetails.myMapFile)
 			{
-				x += os.x + (padding / 2);
+				x += os.x + static_cast<float>(padding / 2);
 				y += os.y;
 				ImGui::RenderFrame(ImVec2(x, y), ImVec2(x + paddedWidth, y + paddedHeight), locColorGreen, true, 3.f);
-				x -= os.x + (padding / 2);
+				x -= os.x + static_cast<float>(padding / 2);
 				y -= os.y;
 			}
 
 			// Draw image
-			auto previewImage = aPlaceholderImage;
+			std::shared_ptr<ImageWrapper> previewImage = aPlaceholderImage;
 			if (mapDetails.myPreviewImage && mapDetails.myPreviewImage->IsLoadedForImGui())
 				previewImage = mapDetails.myPreviewImage;
 
@@ -196,10 +196,17 @@ void CustomMapSelectionUI::SetImGuiContext(std::uintptr_t aContext)
 	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(aContext));
 }
 
-void CustomMapSelectionUI::OnOpen()
+bool CustomMapSelectionUI::OnOpen()
 {
-	myIsWindowOpen = true;
-	myCustomMapLoader->RefreshMaps();
+	myIsWindowOpen = false;
+
+	if (IMGUI_CHECKVERSION())
+	{
+		myIsWindowOpen = true;
+		myCustomMapLoader->RefreshMaps();
+	}
+
+	return myIsWindowOpen;
 }
 
 void CustomMapSelectionUI::OnClose()
@@ -209,9 +216,6 @@ void CustomMapSelectionUI::OnClose()
 
 bool CustomMapSelectionUI::Render()
 {
-	if (!IMGUI_CHECKVERSION())
-		return false;
-
 	ImGui::SetNextWindowSizeConstraints(ImVec2(CustomMapSelectionUI_private::locWindowWidth, CustomMapSelectionUI_private::locWindowHeight), ImVec2(FLT_MAX, FLT_MAX));
 
 	std::int32_t selectedIndex = -1;

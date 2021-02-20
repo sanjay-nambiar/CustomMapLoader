@@ -64,7 +64,7 @@ namespace CustomMapLoader_private
 
 			if (std::find(locMapTypes.begin(), locMapTypes.end(), entry.path().extension().string()) != locMapTypes.end())
 			{
-				info.myMapFile = entry.path();
+				info.myMapFile = entry.path().generic_string();
 				info.myLastUpdated = locTimeString(std::filesystem::last_write_time(info.myMapFile));
 			}
 		}
@@ -92,8 +92,7 @@ void CustomMapLoader::Initialize(const std::shared_ptr<GameWrapper> aGameWrapper
 
 void CustomMapLoader::SetCustomMapDirectory(const std::string& aCustomMapDirectory)
 {
-	*myCustomMapDirectory = aCustomMapDirectory;
-	myCVarManager->getCvar("cml_custom_map_path").setValue(aCustomMapDirectory);
+	myCVarManager->getCvar("cml_custom_map_path").setValue(std::filesystem::path(aCustomMapDirectory).generic_string());
 }
 
 std::filesystem::path CustomMapLoader::GetCustomMapDirectory() const
@@ -131,7 +130,7 @@ bool CustomMapLoader::SelectCustomMap(std::int32_t anIndex)
 	if (anIndex < 0 && anIndex >= myModel.myMaps.size())
 		return false;
 
-	myCVarManager->getCvar("cml_selected_map").setValue(myModel.myMaps[anIndex].myMapFile.string());
+	myCVarManager->getCvar("cml_selected_map").setValue(myModel.myMaps[anIndex].myMapFile);
 
 	return true;
 }

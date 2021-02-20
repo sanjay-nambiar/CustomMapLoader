@@ -19,7 +19,7 @@ public:
 	{
 		std::string myTitle;
 		std::string myLastUpdated;
-		std::filesystem::path myMapFile;
+		std::string myMapFile;
 		std::shared_ptr<ImageWrapper> myPreviewImage;
 	};
 

@@ -16,7 +16,7 @@ public:
 
 	void SetImGuiContext(std::uintptr_t aContext);
 
-	void OnOpen();
+	bool OnOpen();
 	void OnClose();
 
 	bool Render();

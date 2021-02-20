@@ -9,61 +9,13 @@
 
 BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, 0x00)
 
-namespace CustomMapLoaderPlugin_private
-{
-	constexpr const char* locDefaultLaunchMenuKeyBind = "";
-	constexpr const char* locDefaultLoadMapKeyBind = "";
-
-	constexpr const char* locCustomMapPath = "D:/Games/Personal Game Content/Rocket League/Custom Maps/Custom/Maps";
-
-	std::filesystem::path locBakkesModConfigFolder;
-
-	std::string locGetConfigFileName()
-	{
-		return locBakkesModConfigFolder.append("config.cfg").string();
-	}
-
-	std::string locGetBindsFileName()
-	{
-		return locBakkesModConfigFolder.append("binds.cfg").string();
-	}
-
-	bool locIsCommandBound(const std::string& aCommand)
-	{
-		std::ifstream file(locGetBindsFileName());
-		if (file.is_open())
-		{
-			std::string line;
-			while (getline(file, line))
-			{
-				if (line.find(aCommand) != std::string::npos)
-				{
-					file.close();
-					return true;
-				}
-			}
-			file.close();
-		}
-
-		return false;
-	}
-
-	bool locIsWindowBound(const std::string& aWindowName)
-	{
-		const std::string bind = "togglemenu " + aWindowName;
-		return locIsCommandBound(bind);
-	}
-}
-
 CustomMapLoaderPlugin::CustomMapLoaderPlugin()
-	: myIsRendererInitialized(false)
+	: myIsWindowInitialized(false)
 {
 }
 
 void CustomMapLoaderPlugin::onLoad()
 {
-	CustomMapLoaderPlugin_private::locBakkesModConfigFolder = gameWrapper->GetBakkesModPath() / L"cfg";
-
 	std::filesystem::path pluginDataDirectory = gameWrapper->GetDataFolder() / L"CustomMapLoader";
 
 	// Create objects and initialize sub systems
@@ -77,50 +29,24 @@ void CustomMapLoaderPlugin::onLoad()
 	myLoadMapKeybind = std::make_shared<std::string>();
 
 	// Register console vars and commands
-	cvarManager->registerCvar("cml_custom_map_path", CustomMapLoaderPlugin_private::locCustomMapPath, "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
+	cvarManager->registerCvar("cml_custom_map_path", "", "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myCustomMapDirectory);
 
 	cvarManager->registerCvar("cml_selected_map", "", "Selected custom map", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myModel.mySelectedMap);
 
-	cvarManager->registerCvar("cml_error_message", "", "Error messages", false);
-
 	cvarManager->registerNotifier("cml_load_custom_map", [this](const std::vector<std::string>&)
 	{
 		myMapLoader->LoadSelectedMap();
     }, "Loads currently selected custom map", PERMISSION_ALL);
-
-	*myLaunchWindowKeybind = CustomMapLoaderPlugin_private::locDefaultLaunchMenuKeyBind;
-	cvarManager->registerCvar("cml_menu_keybind", CustomMapLoaderPlugin_private::locDefaultLaunchMenuKeyBind, "Keybind for Custom Map Loader menu")
-		.addOnValueChanged([this](std::string aNewValue, CVarWrapper)
-		{
-			*myLaunchWindowKeybind = aNewValue;
-		});
-
-	*myLoadMapKeybind = CustomMapLoaderPlugin_private::locDefaultLoadMapKeyBind;
-	cvarManager->registerCvar("cml_load_map_keybind", CustomMapLoaderPlugin_private::locDefaultLoadMapKeyBind, "Keybind for launching custom map")
-		.addOnValueChanged([this](std::string aNewValue, CVarWrapper)
-		{
-			*myLoadMapKeybind = aNewValue;
-		});
-
-	// Set binds if not already bound
-	std::string toggleWindowCommand = "togglemenu " + GetMenuName();
-	if (!CustomMapLoaderPlugin_private::locIsCommandBound(toggleWindowCommand))
-		cvarManager->setBind(*myLaunchWindowKeybind, toggleWindowCommand);
-
-	if (!CustomMapLoaderPlugin_private::locIsCommandBound("cml_load_custom_map"))
-		cvarManager->setBind(*myLoadMapKeybind, "cml_load_custom_map");
 }
 
 void CustomMapLoaderPlugin::onUnload()
-{
-	cvarManager->backupCfg(CustomMapLoaderPlugin_private::locGetConfigFileName());
-}
+{ }
 
 void CustomMapLoaderPlugin::OnOpen()
 {
-	myMapSelectionUI->OnOpen();
+	myIsWindowInitialized = myMapSelectionUI->OnOpen();
 }
 
 void CustomMapLoaderPlugin::OnClose()
@@ -130,20 +56,8 @@ void CustomMapLoaderPlugin::OnClose()
 
 void CustomMapLoaderPlugin::Render()
 {
-	if (myMapSelectionUI->Render())
-	{
-		if (!myIsRendererInitialized)
-			cvarManager->getCvar("cml_error_message").setValue("");
-
-		myIsRendererInitialized = true;
-	}
-	else
-	{
-		if (myIsRendererInitialized)
-			cvarManager->getCvar("cml_error_message").setValue("ERROR: ImGui isn't initialized properly!");
-
-		myIsRendererInitialized = false;
-	}
+	if (myIsWindowInitialized)
+		myMapSelectionUI->Render();
 
 	if (!myMapSelectionUI->IsWindowOpen())
 		cvarManager->executeCommand("togglemenu " + myMapSelectionUI->GetMenuName());
