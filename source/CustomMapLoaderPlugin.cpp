@@ -4,60 +4,46 @@
 #include "CustomMapSelectionUI.h"
 #include "Version.h"
 
-BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, PERMISSION_ALL)
+#include <fstream>
+#include <sstream>
 
-namespace CustomMapLoaderPlugin_private
-{
-	std::string locGetConfigFileName(const std::filesystem::path& aConfigFolder)
-	{
-		return std::filesystem::path(aConfigFolder).append("/custom_map_loader.cfg").string();
-	}
-
-	static const char* locCmlMapToReplace = "Labs_Underpass_P.upk";
-	static const char* locCmlRocketLeaguePath = "D:/Games/Epic Games/Games/rocketleague";
-	static const char* locCmlCustomMapPath = "D:/Games/Personal Game Content/Rocket Leauge/Custom Maps/Custom/Maps";
-	static const char* locCmlActiveCustomMap = "None";
-}
+BAKKESMOD_PLUGIN(CustomMapLoaderPlugin, PLUGIN_NAME_STR, FULL_VERSION_STRING, 0x00)
 
 CustomMapLoaderPlugin::CustomMapLoaderPlugin()
-	: myIsRendererInitialized(false)
+	: myIsWindowInitialized(false)
 {
 }
 
 void CustomMapLoaderPlugin::onLoad()
 {
-	myMapLoader.reset(new CustomMapLoader());
-	myMapSelectionUI.reset(new CustomMapSelectionUI(*myMapLoader));
+	std::filesystem::path pluginDataDirectory = gameWrapper->GetDataFolder() / L"CustomMapLoader";
 
-	myMapSelectionUI->SetTitle(FULL_PLUGIN_NAME);
+	// Create objects and initialize sub systems
+	myMapLoader = std::make_shared<CustomMapLoader>();
+	myMapSelectionUI = std::make_shared<CustomMapSelectionUI>();
 
-	myBakkesModConfigFolder = gameWrapper->GetBakkesModPath() / L"cfg";
-	myPluginDataDirectory = gameWrapper->GetDataFolder() / L"CustomMapLoader";
+	myMapLoader->Initialize(gameWrapper, cvarManager, myMapSelectionUI, FULL_PLUGIN_NAME, pluginDataDirectory.string());
+	myMapSelectionUI->Initialize(myMapLoader);
 
-	myMapSelectionUI->LoadPlaceholderImage(myPluginDataDirectory.string());
-
-	cvarManager->registerCvar("cml_map_to_replace", CustomMapLoaderPlugin_private::locCmlMapToReplace, "The map file to replace with workshop map", true, false, 0.0f, false, 0.0f, true)
-		.bindTo(myMapLoader->myMapToReplace);
-
-	cvarManager->registerCvar("cml_rocket_league_path", CustomMapLoaderPlugin_private::locCmlRocketLeaguePath, "Epic Games Rocket League path", true, false, 0.0f, false, 0.0f, true)
-		.bindTo(myMapLoader->myGameDirectory);
-
-	cvarManager->registerCvar("cml_custom_map_path", CustomMapLoaderPlugin_private::locCmlCustomMapPath, "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
+	// Register console vars and commands
+	cvarManager->registerCvar("cml_custom_map_path", "", "Custom maps directory", true, false, 0.0f, false, 0.0f, true)
 		.bindTo(myMapLoader->myCustomMapDirectory);
 
-	cvarManager->registerCvar("cml_active_custom_map", "", "Currently Active Custom Map", true, false, 0.0f, false, 0.0f, true)
-		.bindTo(myMapLoader->myActiveCustomMap);
+	cvarManager->registerCvar("cml_selected_map", "", "Selected custom map", true, false, 0.0f, false, 0.0f, true)
+		.bindTo(myMapLoader->myModel.mySelectedMap);
 
-	cvarManager->registerCvar("cml_error_message", "", "Error messages", false);
+	cvarManager->registerNotifier("cml_load_custom_map", [this](const std::vector<std::string>&)
+	{
+		myMapLoader->LoadSelectedMap();
+    }, "Loads currently selected custom map", PERMISSION_ALL);
 }
 
 void CustomMapLoaderPlugin::onUnload()
-{
-}
+{ }
 
 void CustomMapLoaderPlugin::OnOpen()
 {
-	myMapSelectionUI->OnOpen();
+	myIsWindowInitialized = myMapSelectionUI->OnOpen();
 }
 
 void CustomMapLoaderPlugin::OnClose()
@@ -67,20 +53,8 @@ void CustomMapLoaderPlugin::OnClose()
 
 void CustomMapLoaderPlugin::Render()
 {
-	if (myMapSelectionUI->Render())
-	{
-		if (!myIsRendererInitialized)
-			cvarManager->getCvar("cml_error_message").setValue("");
-
-		myIsRendererInitialized = true;
-	}
-	else
-	{
-		if (myIsRendererInitialized)
-			cvarManager->getCvar("cml_error_message").setValue("ERROR: ImGui isn't initialized properly!");
-
-		myIsRendererInitialized = false;
-	}
+	if (myIsWindowInitialized)
+		myMapSelectionUI->Render();
 
 	if (!myMapSelectionUI->IsWindowOpen())
 		cvarManager->executeCommand("togglemenu " + myMapSelectionUI->GetMenuName());

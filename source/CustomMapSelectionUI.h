@@ -3,18 +3,20 @@
 #include "CustomMapLoader.h"
 
 #include <cstdint>
+#include <memory>
 #include <string>
 
 class CustomMapSelectionUI
 {
 public:
-	CustomMapSelectionUI(CustomMapLoader& aMapLoader);
+	CustomMapSelectionUI();
 	~CustomMapSelectionUI() = default;
 
-	void SetImGuiContext(std::uintptr_t aContext);
-	void SetTitle(const std::string& aTitle);
+	void Initialize(std::shared_ptr<CustomMapLoader> aCustomMapLoader);
 
-	void OnOpen();
+	void SetImGuiContext(std::uintptr_t aContext);
+
+	bool OnOpen();
 	void OnClose();
 
 	bool Render();
@@ -26,11 +28,7 @@ public:
 	bool ShouldBlockInput();
 	bool IsActiveOverlay();
 
-	void LoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory);
-
 private:
+	std::shared_ptr<CustomMapLoader> myCustomMapLoader;
 	bool myIsWindowOpen;
-	CustomMapLoader& myMapLoader;
-
-	std::string myTitle;
 };

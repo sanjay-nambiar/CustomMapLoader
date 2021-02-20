@@ -9,10 +9,30 @@
 
 namespace CustomMapLoader_private
 {
-	static const char* locMapsDirectory = "TAGame/CookedPCConsole";
+	static const char* locLoadMapCommand = "load_workshop";
 
 	static std::vector<std::string> locImageTypes = { ".jpg", ".png" };
 	static std::vector<std::string> locMapTypes = { ".udk", ".upk" };
+
+	static const char* locPlaceholderImageName = "placeholder.jpg";
+	std::shared_ptr<ImageWrapper> locPlaceholderImage;
+
+	void locLoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory)
+	{
+		std::filesystem::path imagePath = aPluginDataDirectory;
+		imagePath.append(locPlaceholderImageName).make_preferred();
+
+		locPlaceholderImage = std::make_shared<ImageWrapper>(imagePath, false, true);
+	}
+
+	void locCloseOpenMenus(std::shared_ptr<CVarManagerWrapper> aCVarManagerconst, CustomMapSelectionUI& aCustomMapSelectionUI)
+	{
+		aCVarManagerconst->executeCommand("closemenu queuemenu");
+		aCVarManagerconst->executeCommand("closemenu settings");
+		aCVarManagerconst->executeCommand("closemenu console2");
+		aCVarManagerconst->executeCommand("closemenu pluginmanager");
+		aCVarManagerconst->executeCommand("closemenu " + aCustomMapSelectionUI.GetMenuName());
+	}
 
 	template <typename TimePoint>
 	std::string locTimeString(TimePoint tp)
@@ -25,11 +45,6 @@ namespace CustomMapLoader_private
 		std::stringstream buffer;
 		buffer << std::put_time(local, "%A, %d %B %Y %H:%M");
 		return buffer.str();
-	}
-
-	bool locCopyFile(const std::filesystem::path& aSourcePath, const std::filesystem::path& aDestPath, bool aShouldOverwrite = true)
-	{
-		return std::filesystem::copy_file(aSourcePath, aDestPath, aShouldOverwrite ? std::filesystem::copy_options::overwrite_existing : std::filesystem::copy_options::none);
 	}
 
 	CustomMapLoader::MapInfo locGetMapDetails(const std::filesystem::directory_entry& aMapDirectory, CustomMapLoader& aLoader)
@@ -49,91 +64,35 @@ namespace CustomMapLoader_private
 
 			if (std::find(locMapTypes.begin(), locMapTypes.end(), entry.path().extension().string()) != locMapTypes.end())
 			{
-				info.myMapFile = entry.path();
+				info.myMapFile = entry.path().generic_string();
 				info.myLastUpdated = locTimeString(std::filesystem::last_write_time(info.myMapFile));
 			}
 		}
 
 		return info;
 	}
-
-	std::filesystem::path locGetMapToReplacePath(const CustomMapLoader& aMapLoader)
-	{
-		std::filesystem::path gameFile = aMapLoader.GetGameDirectory();
-		gameFile.append(locMapsDirectory).append(aMapLoader.GetMapToReplace()).make_preferred();
-		return gameFile;
-	}
-
-	std::filesystem::path locGetBackupFilePath(const CustomMapLoader& aMapLoader)
-	{
-		std::filesystem::path backupFile = aMapLoader.GetGameDirectory();
-		backupFile.append(locMapsDirectory).append(aMapLoader.GetMapToReplace() + ".bak").make_preferred();
-		return backupFile;
-	}
-
-	bool locIsBackupAvailable(const CustomMapLoader& aMapLoader)
-	{
-		return std::filesystem::exists(locGetBackupFilePath(aMapLoader));
-	}
 }
 
 CustomMapLoader::CustomMapLoader()
-	: myActiveCustomMapIndex(-1)
+: myCustomMapDirectory(std::make_shared<std::string>())
 {
-	myGameDirectory = std::make_shared<std::string>();
-	myCustomMapDirectory = std::make_shared<std::string>();
-	myMapToReplace = std::make_shared<std::string>();
-	myActiveCustomMap = std::make_shared<std::string>();
+	myModel.mySelectedMap = std::make_shared<std::string>();
 }
 
-bool CustomMapLoader::ValidateDirectories(std::vector<std::string>& errorMessages)
+void CustomMapLoader::Initialize(const std::shared_ptr<GameWrapper> aGameWrapper, const std::shared_ptr<CVarManagerWrapper>& aCvarManager,
+	std::shared_ptr<CustomMapSelectionUI> aCustomMapSelectionUI, const std::string& aPluginFullName, const std::filesystem::path& aPluginDataDirectory)
 {
-	bool isValid = true;
+	myGameWrapper = aGameWrapper;
+	myCVarManager = aCvarManager;
+	myCustomMapSelectionUI = aCustomMapSelectionUI;
 
-	if (!std::filesystem::exists(GetGameDirectory()))
-	{
-		isValid = false;
-		errorMessages.push_back("Game directory does not exist!");
-	}
-	else
-	{
-		std::filesystem::path mapToReplacePath = *myGameDirectory;
-		mapToReplacePath.append(CustomMapLoader_private::locMapsDirectory).append(*myMapToReplace).make_preferred();
-
-		if (!std::filesystem::exists(mapToReplacePath))
-		{
-			errorMessages.push_back("Original game map to replace not found!");
-			isValid = false;
-		}
-	}
-
-	if (!std::filesystem::exists(GetCustomMapDirectory()))
-	{
-		isValid = false;
-		errorMessages.push_back("Backup directory does not exist!");
-	}
-
-	return isValid;
-}
-
-void CustomMapLoader::SetGameDirectory(const std::string& aGameDirectory)
-{
-	*myGameDirectory = aGameDirectory;
+	myModel.myWindowTitle = aPluginFullName;
+	CustomMapLoader_private::locLoadPlaceholderImage(aPluginDataDirectory);
 }
 
 void CustomMapLoader::SetCustomMapDirectory(const std::string& aCustomMapDirectory)
 {
-	*myCustomMapDirectory = aCustomMapDirectory;
-}
-
-void CustomMapLoader::SetMapToReplace(const std::string& aMapToReplace)
-{
-	*myMapToReplace = aMapToReplace;
-}
-
-std::filesystem::path CustomMapLoader::GetGameDirectory() const
-{
-	return std::filesystem::path(*myGameDirectory).make_preferred();
+	myCVarManager->getCvar("cml_custom_map_path").setValue(std::filesystem::path(aCustomMapDirectory).generic_string());
 }
 
 std::filesystem::path CustomMapLoader::GetCustomMapDirectory() const
@@ -141,37 +100,17 @@ std::filesystem::path CustomMapLoader::GetCustomMapDirectory() const
 	return std::filesystem::path(*myCustomMapDirectory).make_preferred();
 }
 
-std::string CustomMapLoader::GetMapToReplace() const
-{
-	return *myMapToReplace;
-}
-
-bool CustomMapLoader::BackupPristineState()
-{
-	if (CustomMapLoader_private::locIsBackupAvailable(*this))
-		return false;
-
-	return CustomMapLoader_private::locCopyFile(CustomMapLoader_private::locGetMapToReplacePath(*this), CustomMapLoader_private::locGetBackupFilePath(*this));
-}
-
-bool CustomMapLoader::RestorePristineState()
-{
-	if (!CustomMapLoader_private::locIsBackupAvailable(*this))
-		return false;
-
-	if (CustomMapLoader_private::locCopyFile(CustomMapLoader_private::locGetBackupFilePath(*this), CustomMapLoader_private::locGetMapToReplacePath(*this)))
-	{
-		myActiveCustomMapIndex = -1;
-		*myActiveCustomMap = "";
-		return true;
-	}
-
-	return false;
-}
-
 bool CustomMapLoader::RefreshMaps()
 {
-	myMaps.erase(myMaps.begin(), myMaps.end());
+	myModel.myErrorMessages.erase(myModel.myErrorMessages.begin(), myModel.myErrorMessages.end());
+
+	if (!std::filesystem::exists(GetCustomMapDirectory()))
+	{
+		myModel.myErrorMessages.push_back("Custom map directory not found.");
+		return false;
+	}
+
+	myModel.myMaps.erase(myModel.myMaps.begin(), myModel.myMaps.end());
 
 	for (const auto& entry : std::filesystem::directory_iterator(GetCustomMapDirectory()))
 	{
@@ -180,46 +119,53 @@ bool CustomMapLoader::RefreshMaps()
 
 		MapInfo info = CustomMapLoader_private::locGetMapDetails(entry, *this);
 		if (!info.myMapFile.empty())
-			myMaps.emplace_back(info);
-	}
-
-	myActiveCustomMapIndex = -1;
-	for (std::uint32_t index = 0; index < myMaps.size(); ++index)
-	{
-		const MapInfo& info = myMaps[index];
-		if (info.myTitle == *myActiveCustomMap)
-			myActiveCustomMapIndex = index;
+			myModel.myMaps.emplace_back(info);
 	}
 
 	return true;
 }
 
-bool CustomMapLoader::LoadMap(std::int32_t anIndex)
+bool CustomMapLoader::SelectCustomMap(std::int32_t anIndex)
 {
-	if (anIndex < 0 && anIndex >= myMaps.size())
+	if (anIndex < 0 && anIndex >= myModel.myMaps.size())
 		return false;
 
-	BackupPristineState();
+	myCVarManager->getCvar("cml_selected_map").setValue(myModel.myMaps[anIndex].myMapFile);
 
-	std::filesystem::path gameFile = *myGameDirectory;
-	gameFile.append(CustomMapLoader_private::locMapsDirectory).append(*myMapToReplace).make_preferred();
+	return true;
+}
 
-	if (CustomMapLoader_private::locCopyFile(myMaps[anIndex].myMapFile, CustomMapLoader_private::locGetMapToReplacePath(*this)))
+void CustomMapLoader::LoadSelectedMap()
+{
+	if (*myModel.mySelectedMap == "")
+		return;
+
+	std::stringstream commandBuilder;
+	commandBuilder << CustomMapLoader_private::locLoadMapCommand << " \"" << *myModel.mySelectedMap << "\"";
+
+	myCVarManager->executeCommand(commandBuilder.str());
+}
+
+void CustomMapLoader::Execute(const std::function<void(GameWrapper*)>& aFunction)
+{
+	myGameWrapper->Execute([this, aFunction](GameWrapper* aGameWrapper)
 	{
-		myActiveCustomMapIndex = anIndex;
-		*myActiveCustomMap = myMaps[myActiveCustomMapIndex].myTitle;
-		return true;
-	}
-
-	return false;
+		try
+		{
+			aFunction(aGameWrapper);
+		}
+		catch (const std::exception& e)
+		{
+			myCVarManager->log(std::string("[CRITICAL] [CML] Execute threw exception: ") + e.what());
+		}
+		catch (...)
+		{
+			myCVarManager->log("[CRITICAL] [CML] Execute threw an exception");
+		}
+	});
 }
 
-const std::vector<CustomMapLoader::MapInfo>& CustomMapLoader::GetMaps() const
+const CustomMapLoader::UIModel& CustomMapLoader::GetUIModel() const
 {
-	return myMaps;
-}
-
-std::int32_t CustomMapLoader::GetCurrentMap() const
-{
-	return myActiveCustomMapIndex;
+	return myModel;
 }

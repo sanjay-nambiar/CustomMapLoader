@@ -20,13 +20,60 @@ namespace CustomMapSelectionUI_private
 
 	static ImColor locColorGreen = IM_COL32(0, 255, 0, 255);
 	static ImColor locColorRed = IM_COL32(255, 0, 0, 255);
-	static ImColor locColorYellow = IM_COL32(160, 160, 0, 255);
+	static ImColor locColorYellow = IM_COL32(255, 255, 0, 255);
+	static ImColor locColorWhite = IM_COL32(255, 255, 255, 255);
 
-	static const char* locPlaceholderImageName = "placeholder.jpg";
-	std::shared_ptr<ImageWrapper> locPlaceholderImage;
-	std::filesystem::path locPlaceholderImagePath;
+	void locRenderSettingsTab(CustomMapLoader& aCustomMapLoader)
+	{
+		if (ImGui::BeginTabItem("Settings"))
+		{
+			const CustomMapLoader::UIModel& uiModel = aCustomMapLoader.GetUIModel();
 
-	std::int32_t locDrawMapGrid(const std::vector<CustomMapLoader::MapInfo>& someMapDetails, std::int32_t aSelectedIndex)
+			char buffer[1024];
+			strcpy(buffer, aCustomMapLoader.GetCustomMapDirectory().string().c_str());
+
+			ImGui::NewLine();
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5);
+			ImGui::TextColored(locColorYellow, "Map folder: ");
+			ImGui::SameLine();
+			if (ImGui::InputText("##Custom Maps Directory", buffer, 1023, ImGuiInputTextFlags_None))
+			{
+				aCustomMapLoader.SetCustomMapDirectory(std::string(buffer));
+			}
+			ImGui::NewLine();
+
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5);
+			ImGui::TextColored(locColorYellow, "Selected Map: ");
+			ImGui::SameLine();
+			ImGui::TextColored(locColorWhite, uiModel.mySelectedMap->c_str());
+
+			ImGui::NewLine();
+			ImGui::NewLine();
+			if (ImGui::Button("Refresh Maps", ImVec2(100, 30)))
+			{
+				aCustomMapLoader.RefreshMaps();
+			}
+
+			// Display error / success messages
+			ImGui::NewLine();
+			if (uiModel.myErrorMessages.size() > 0)
+			{
+				for (const std::string& message : uiModel.myErrorMessages)
+				{
+					ImGui::TextColored(locColorRed, message.c_str());
+					ImGui::NewLine();
+				}
+			}
+			else if (uiModel.myMaps.size() > 0)
+			{
+				ImGui::TextColored(locColorGreen, "Found %d maps.", uiModel.myMaps.size());
+			}
+
+			ImGui::EndTabItem();
+		}
+	}
+
+	std::int32_t locDrawMapGrid(const std::vector<CustomMapLoader::MapInfo>& someMapDetails, std::shared_ptr<ImageWrapper> aPlaceholderImage, const std::string& aSelectedMap)
 	{
 		static std::uint32_t width = 300;
 		static std::uint32_t height = 225;
@@ -34,6 +81,8 @@ namespace CustomMapSelectionUI_private
 		static std::uint32_t paddedWidth = width + (2 * padding);
 		static std::uint32_t paddedHeight = height + (2 * padding);
 		static std::uint32_t wordWrapMaxLength =  32;
+
+		std::int32_t selectedIndex = -1;
 
 		ImVec2 os = ImGui::GetCursorScreenPos();
 		ImVec2 origin = ImGui::GetCursorPos();
@@ -45,25 +94,18 @@ namespace CustomMapSelectionUI_private
 			const CustomMapLoader::MapInfo& mapDetails = someMapDetails[index];
 			ImGui::PushID(index);
 
-			/*
-			ImVec2 mousePos = ImGui::GetMousePos();
-			mousePos.x -= os.x;
-			mousePos.y -= os.y;
-			bool isNotHovering = (mousePos.x > x && mousePos.x < x + paddedWidth && mousePos.y > y && mousePos.y < y + paddedHeight);
-			*/
-
-			// Draw selection border
-			if (aSelectedIndex == index)
+			// Highlight currently selected map
+			if (aSelectedMap == mapDetails.myMapFile)
 			{
-				x += os.x + 5;
+				x += os.x + static_cast<float>(padding / 2);
 				y += os.y;
 				ImGui::RenderFrame(ImVec2(x, y), ImVec2(x + paddedWidth, y + paddedHeight), locColorGreen, true, 3.f);
-				x -= os.x + 5;
+				x -= os.x + static_cast<float>(padding / 2);
 				y -= os.y;
 			}
 
 			// Draw image
-			auto previewImage = locPlaceholderImage;
+			std::shared_ptr<ImageWrapper> previewImage = aPlaceholderImage;
 			if (mapDetails.myPreviewImage && mapDetails.myPreviewImage->IsLoadedForImGui())
 				previewImage = mapDetails.myPreviewImage;
 
@@ -72,7 +114,7 @@ namespace CustomMapSelectionUI_private
 				ImGui::SetCursorPosX(x + origin.x + padding);
 				ImGui::SetCursorPosY(y + origin.y + padding);
 				if (ImGui::ImageButton(previewImage->GetImGuiTex(), ImVec2(static_cast<float>(width), static_cast<float>(height))))
-					aSelectedIndex = index;
+					selectedIndex = index;
 			}
 
 			// Draw map name
@@ -100,108 +142,53 @@ namespace CustomMapSelectionUI_private
 			ImGui::PopID();
 		}
 
-		return aSelectedIndex;
+		return selectedIndex;
 	}
 
-	void locRenderCustomMapSelectionTab(CustomMapLoader& aCustomMapLoader)
+	std::int32_t locRenderCustomMapSelectionTab(std::shared_ptr<CustomMapLoader> aCustomMapLoader)
 	{
+		std::int32_t selectedIndex = -1;
+
 		if (ImGui::BeginTabItem("Custom Maps"))
 		{
-			std::int32_t selectedIndex = locDrawMapGrid(aCustomMapLoader.GetMaps(), aCustomMapLoader.GetCurrentMap());
-			if (selectedIndex != aCustomMapLoader.GetCurrentMap())
-				aCustomMapLoader.LoadMap(selectedIndex);
+			ImGui::NewLine();
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 5);
+
+			const CustomMapLoader::UIModel& uiModel = aCustomMapLoader->GetUIModel();
+			bool isLaunchDisabled = (*uiModel.mySelectedMap == "");
+
+			float originalAlpha = ImGui::GetStyle().Alpha;
+			if (isLaunchDisabled)
+				ImGui::GetStyle().Alpha = 0.25f;
+
+			if (ImGui::Button("Launch Map", ImVec2(100.f, 30.f)) && !isLaunchDisabled)
+			{
+				aCustomMapLoader->Execute([aCustomMapLoader](GameWrapper*)
+				{
+					aCustomMapLoader->LoadSelectedMap();
+				});
+			}
+
+			ImGui::GetStyle().Alpha = originalAlpha;
+
+			ImGui::NewLine();
+
+			selectedIndex = locDrawMapGrid(uiModel.myMaps, uiModel.myPlaceholderImage, *uiModel.mySelectedMap);
 
 			ImGui::EndTabItem();
 		}
-	}
 
-	std::vector<std::string> locRefreshErrorMessages;
-	bool locIsRestoreMapSuccessful = false;
-
-	void locRenderSettingsTab(CustomMapLoader& aCustomMapLoader)
-	{
-		if (ImGui::BeginTabItem("Settings"))
-		{
-			ImGui::NewLine();
-			ImGui::TextColored(locColorYellow, " Map to replace: %s", aCustomMapLoader.GetMapToReplace().c_str());
-
-			char buffer[1024];
-
-			ImGui::NewLine();
-			strcpy(buffer, aCustomMapLoader.GetGameDirectory().string().c_str());
-			ImGui::InputText("Rocket League Path", buffer, 128, ImGuiInputTextFlags_CharsNoBlank);
-			aCustomMapLoader.SetGameDirectory(buffer);
-
-			ImGui::NewLine();
-			strcpy(buffer, aCustomMapLoader.GetCustomMapDirectory().string().c_str());
-			ImGui::InputText("Custom Maps Directory", buffer, 128, ImGuiInputTextFlags_CharsNoBlank);
-			aCustomMapLoader.SetCustomMapDirectory(buffer);
-
-			ImGui::NewLine();
-			ImGui::NewLine();
-			if (ImGui::Button("Refresh Maps", ImVec2(100, 30)))
-			{
-				locRefreshErrorMessages.erase(locRefreshErrorMessages.begin(), locRefreshErrorMessages.end());
-
-				if (aCustomMapLoader.ValidateDirectories(locRefreshErrorMessages))
-					aCustomMapLoader.RefreshMaps();
-
-				ImGui::OpenPopup("#cml_map_refresh_details");
-			}
-
-			ImGui::SameLine();
-			if(ImGui::Button("Restore Map", ImVec2(100, 30)))
-			{
-				locIsRestoreMapSuccessful = aCustomMapLoader.RestorePristineState();
-				ImGui::OpenPopup("#cml_restore_map_details");
-			}
-
-			ImVec2 cursorPos = ImGui::GetCursorPos();
-			ImGui::SetCursorPos(ImVec2(cursorPos.x, cursorPos.y + 50));
-
-			// Display error / success messages
-			if (ImGui::BeginPopup("#cml_map_refresh_details"))
-			{
-				if (locRefreshErrorMessages.size() > 0)
-				{
-					for (const std::string& message : locRefreshErrorMessages)
-					{
-						ImGui::TextColored(locColorRed, message.c_str());
-						ImGui::NewLine();
-					}
-				}
-				else if (aCustomMapLoader.GetMaps().size() > 0)
-				{
-					ImGui::TextColored(locColorGreen, "Found %d maps.", aCustomMapLoader.GetMaps().size());
-				}
-
-				ImGui::EndPopup();
-			}
-
-			if (ImGui::BeginPopup("#cml_restore_map_details"))
-			{
-				if (locIsRestoreMapSuccessful)
-					ImGui::TextColored(locColorGreen, "Restored original map from backup!");
-				else
-					ImGui::TextColored(locColorRed, "Failed restoring original map from backup!");
-
-				ImGui::EndPopup();
-			}
-
-			ImGui::NewLine();
-			ImGui::NewLine();
-			for (const std::string& value : aCustomMapLoader.GetValues())
-				ImGui::Text(value.c_str());
-
-			ImGui::EndTabItem();
-		}
+		return selectedIndex;
 	}
 }
 
-CustomMapSelectionUI::CustomMapSelectionUI(CustomMapLoader& aMapLoader)
-	: myIsWindowOpen(false)
-	, myMapLoader(aMapLoader)
+CustomMapSelectionUI::CustomMapSelectionUI()
+: myIsWindowOpen(false)
+{}
+
+void CustomMapSelectionUI::Initialize(std::shared_ptr<CustomMapLoader> aCustomMapLoader)
 {
+	myCustomMapLoader = aCustomMapLoader;
 }
 
 void CustomMapSelectionUI::SetImGuiContext(std::uintptr_t aContext)
@@ -209,14 +196,17 @@ void CustomMapSelectionUI::SetImGuiContext(std::uintptr_t aContext)
 	ImGui::SetCurrentContext(reinterpret_cast<ImGuiContext*>(aContext));
 }
 
-void CustomMapSelectionUI::SetTitle(const std::string& aTitle)
+bool CustomMapSelectionUI::OnOpen()
 {
-	myTitle = aTitle;
-}
+	myIsWindowOpen = false;
 
-void CustomMapSelectionUI::OnOpen()
-{
-	myIsWindowOpen = true;
+	if (IMGUI_CHECKVERSION())
+	{
+		myIsWindowOpen = true;
+		myCustomMapLoader->RefreshMaps();
+	}
+
+	return myIsWindowOpen;
 }
 
 void CustomMapSelectionUI::OnClose()
@@ -226,21 +216,24 @@ void CustomMapSelectionUI::OnClose()
 
 bool CustomMapSelectionUI::Render()
 {
-	if (!IMGUI_CHECKVERSION())
-		return false;
-
 	ImGui::SetNextWindowSizeConstraints(ImVec2(CustomMapSelectionUI_private::locWindowWidth, CustomMapSelectionUI_private::locWindowHeight), ImVec2(FLT_MAX, FLT_MAX));
 
-	if (ImGui::Begin(myTitle.c_str(), &myIsWindowOpen))
+	std::int32_t selectedIndex = -1;
+
+	const CustomMapLoader::UIModel& uiModel = myCustomMapLoader->GetUIModel();
+	if (ImGui::Begin(uiModel.myWindowTitle.c_str(), &myIsWindowOpen))
 	{
 		if (ImGui::BeginTabBar("#TabBar", ImGuiTabBarFlags_NoCloseWithMiddleMouseButton | ImGuiTabBarFlags_NoTooltip))
 		{
-			CustomMapSelectionUI_private::locRenderSettingsTab(myMapLoader);
-			CustomMapSelectionUI_private::locRenderCustomMapSelectionTab(myMapLoader);
+			CustomMapSelectionUI_private::locRenderSettingsTab(*myCustomMapLoader);
+			selectedIndex = CustomMapSelectionUI_private::locRenderCustomMapSelectionTab(myCustomMapLoader);
 			ImGui::EndTabBar();
 		}
 	}
 	ImGui::End();
+
+	if (selectedIndex != -1)
+		myCustomMapLoader->SelectCustomMap(selectedIndex);
 
 	return true;
 }
@@ -252,7 +245,7 @@ std::string CustomMapSelectionUI::GetMenuName() const
 
 std::string CustomMapSelectionUI::GetMenuTitle() const
 {
-	return myTitle;
+	return myCustomMapLoader->GetUIModel().myWindowTitle;
 }
 
 bool CustomMapSelectionUI::IsWindowOpen() const
@@ -268,13 +261,4 @@ bool CustomMapSelectionUI::ShouldBlockInput()
 bool CustomMapSelectionUI::IsActiveOverlay()
 {
 	return true;
-}
-
-void CustomMapSelectionUI::LoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory)
-{
-	std::filesystem::path imagePath = aPluginDataDirectory;
-	imagePath.append(CustomMapSelectionUI_private::locPlaceholderImageName).make_preferred();
-	CustomMapSelectionUI_private::locPlaceholderImage = std::make_shared<ImageWrapper>(imagePath, false, true);
-
-	CustomMapSelectionUI_private::locPlaceholderImagePath = imagePath;
 }
