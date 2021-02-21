@@ -15,19 +15,17 @@ namespace CustomMapLoader_private
 	static std::vector<std::string> locMapTypes = { ".udk", ".upk" };
 
 	static const char* locPlaceholderImageName = "placeholder.jpg";
-	std::shared_ptr<ImageWrapper> locPlaceholderImage;
 
-	void locLoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory)
+	std::shared_ptr<ImageWrapper> locLoadPlaceholderImage(const std::filesystem::path& aPluginDataDirectory)
 	{
 		std::filesystem::path imagePath = aPluginDataDirectory;
 		imagePath.append(locPlaceholderImageName).make_preferred();
 
-		locPlaceholderImage = std::make_shared<ImageWrapper>(imagePath, false, true);
+		return std::make_shared<ImageWrapper>(imagePath, false, true);
 	}
 
 	void locCloseOpenMenus(std::shared_ptr<CVarManagerWrapper> aCVarManagerconst, CustomMapSelectionUI& aCustomMapSelectionUI)
 	{
-		aCVarManagerconst->executeCommand("closemenu queuemenu");
 		aCVarManagerconst->executeCommand("closemenu settings");
 		aCVarManagerconst->executeCommand("closemenu console2");
 		aCVarManagerconst->executeCommand("closemenu pluginmanager");
@@ -87,7 +85,7 @@ void CustomMapLoader::Initialize(const std::shared_ptr<GameWrapper> aGameWrapper
 	myCustomMapSelectionUI = aCustomMapSelectionUI;
 
 	myModel.myWindowTitle = aPluginFullName;
-	CustomMapLoader_private::locLoadPlaceholderImage(aPluginDataDirectory);
+	myModel.myPlaceholderImage = CustomMapLoader_private::locLoadPlaceholderImage(aPluginDataDirectory);
 }
 
 void CustomMapLoader::SetCustomMapDirectory(const std::string& aCustomMapDirectory)
@@ -139,6 +137,8 @@ void CustomMapLoader::LoadSelectedMap()
 {
 	if (*myModel.mySelectedMap == "")
 		return;
+
+	CustomMapLoader_private::locCloseOpenMenus(myCVarManager, *myCustomMapSelectionUI);
 
 	std::stringstream commandBuilder;
 	commandBuilder << CustomMapLoader_private::locLoadMapCommand << " \"" << *myModel.mySelectedMap << "\"";
